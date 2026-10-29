@@ -154,6 +154,26 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
 .fit-photo img{width:100%;border-radius:10px;display:block;border:1px solid var(--line)}
 .fit-photo .rm{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;border:0;background:rgba(13,15,18,.75);color:#fff;font-size:16px;cursor:pointer;line-height:1}
 .fit-photo .zoom{font-size:11px;color:var(--tx3);text-align:center;margin-top:6px}
+/* 透明度滑块 */
+.range-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.range-row input[type=range]{flex:1;accent-color:var(--ac);height:24px}
+.range-row .val{font-size:12px;color:var(--tx2);min-width:36px;text-align:right;font-variant-numeric:tabular-nums}
+/* 抠图开关 */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.toggle-row .lbl{font-size:13px;color:var(--tx2)}
+.switch{position:relative;width:44px;height:24px;flex:0 0 44px;cursor:pointer}
+.switch input{display:none}
+.switch .sl{position:absolute;inset:0;border-radius:99px;background:#3a4250;transition:.2s}
+.switch .sl::before{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+.switch input:checked+.sl{background:var(--ac)}
+.switch input:checked+.sl::before{transform:translateX(20px)}
+/* 层级按钮 */
+.layer-actions{display:flex;gap:6px;margin-top:8px}
+.layer-actions button{flex:1;min-height:36px;border:1px solid #4a525f;border-radius:8px;background:var(--panel);color:#dfe3ea;font-size:13px;font-weight:700;cursor:pointer}
+.layer-actions button:hover{border-color:var(--ac)}
+/* 一键适配按钮 */
+.btn-fit-person{margin-top:10px;width:100%;min-height:40px;border:1px solid rgba(143,180,255,.4);border-radius:9px;background:rgba(143,180,255,.1);color:var(--ac2);font-size:14px;font-weight:700;cursor:pointer}
+.btn-fit-person:hover{background:rgba(143,180,255,.18)}
 .seg{display:flex;gap:6px;flex-wrap:wrap}
 .seg button{flex:1 1 auto;min-height:40px;padding:0 12px;border:1px solid #4a525f;border-radius:9px;background:var(--panel);color:#dfe3ea;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
 .seg button[aria-pressed=true]{background:var(--tx);color:#111;border-color:var(--tx)}
@@ -305,20 +325,33 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
           <div class="fit-photo" id="fitPhotoWrap" hidden>
             <img id="fitPhotoPreview" alt="">
             <button type="button" class="rm" id="fitPhotoRm" aria-label="移除照片">×</button>
-            <div class="zoom" id="fitZoom">100%</div>
+          </div>
+          <div class="range-row" id="fitOpacityRow" hidden>
+            <span class="lbl" data-i18n="fitOpacity">人像透明度</span>
+            <input type="range" id="fitOpacityRange" min="0.1" max="1" step="0.05" value="1">
+            <span class="val" id="fitOpacityVal">100%</span>
           </div>
           <div class="seg" id="fitBgSeg" style="margin-top:10px">
             <button type="button" data-bg="none" aria-pressed="true" data-i18n="fitBgNone">无背景</button>
             <button type="button" data-bg="white" aria-pressed="false" data-i18n="fitBgWhite">白底</button>
           </div>
+          <button type="button" class="btn-fit-person" id="fitPerson" hidden data-i18n="fitPerson">一键适配人像</button>
         </section>
         <section>
           <h3 data-i18n="fitGarmentTitle">选择服装</h3>
           <input class="fit-search" id="fitSearch" type="search" data-i18n-placeholder="fitSearchPh" placeholder="搜索服装…">
+          <div class="toggle-row">
+            <span class="lbl" data-i18n="fitAutoCut">自动去背景（抠图）</span>
+            <label class="switch"><input type="checkbox" id="fitAutoCut" checked><span class="sl"></span></label>
+          </div>
           <div class="garment-list" id="fitGarmentList"></div>
         </section>
         <section>
           <h3 data-i18n="fitLayerTitle">已添加的搭配层</h3>
+          <div class="layer-actions">
+            <button type="button" id="fitLayerUp" data-i18n="fitLayerUp">置顶</button>
+            <button type="button" id="fitLayerDown" data-i18n="fitLayerDown">置底</button>
+          </div>
           <div class="layer-list" id="fitLayerList"></div>
         </section>
       </div>
@@ -390,6 +423,8 @@ const I18N = {
     fitLayerTitle: '已添加的搭配层', fitClear: '清空', fitExport: '导出搭配图',
     fitNoLayer: '还没有添加服装', fitDownloaded: '搭配图已导出',
     fitPreview: '预览', fitPreviewClose: '返回编辑', fitPreviewEmpty: '还没有可预览的内容，请先上传照片或添加服装',
+    fitOpacity: '人像透明度', fitPerson: '一键适配人像',
+    fitAutoCut: '自动去背景（抠图）', fitLayerUp: '置顶', fitLayerDown: '置底',
   },
   en: {
     eyebrow: 'COSTUME-DB-01 · Costume Reference Gallery',
@@ -436,6 +471,8 @@ const I18N = {
     fitLayerTitle: 'Added layers', fitClear: 'Clear', fitExport: 'Export look',
     fitNoLayer: 'No outfits added yet', fitDownloaded: 'Look exported',
     fitPreview: 'Preview', fitPreviewClose: 'Back to edit', fitPreviewEmpty: 'Nothing to preview yet — upload a photo or add outfits first',
+    fitOpacity: 'Photo opacity', fitPerson: 'Auto-fit to person',
+    fitAutoCut: 'Auto remove background', fitLayerUp: 'Bring to front', fitLayerDown: 'Send to back',
   }
 };
 
@@ -677,7 +714,10 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   // ===== 人像上传 =====
   const photoWrap = document.getElementById('fitPhotoWrap');
   const photoPreview = document.getElementById('fitPhotoPreview');
-  const zoomEl = document.getElementById('fitZoom');
+  const zoomEl = document.getElementById('fitOpacityVal');
+  const opacityRow = document.getElementById('fitOpacityRow');
+  const opacityRange = document.getElementById('fitOpacityRange');
+  const fitPersonBtn = document.getElementById('fitPerson');
   let photoScale = 1;
 
   document.getElementById('fitFile').addEventListener('change', e=>{
@@ -695,6 +735,9 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       photoWrap.hidden = false;
       photoPreview.src = url;
       photoScale = 1; updateZoom();
+      opacityRow.hidden = false;
+      fitPersonBtn.hidden = false;
+      opacityRange.value = 1;
       emptyEl.style.display='none';
       e.target.value='';
     };
@@ -718,10 +761,36 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     zoomEl.textContent = Math.round(photoScale*100)+'%';
     if(personImg) personImg.style.opacity = photoScale;
   }
+  opacityRange.addEventListener('input', ()=>{
+    photoScale = parseFloat(opacityRange.value);
+    updateZoom();
+  });
   document.getElementById('fitPhotoRm').addEventListener('click', ()=>{
     if(personImg){ personImg.remove(); personImg=null; }
     photoWrap.hidden=true;
+    opacityRow.hidden=true;
+    fitPersonBtn.hidden=true;
     emptyEl.style.display='flex';
+  });
+
+  // 一键适配人像：把所有衣服层按人像身高比例缩放到画布内合理位置
+  fitPersonBtn.addEventListener('click', ()=>{
+    if(!layers.length) return;
+    const ch=CH();
+    layers.forEach(l=>{
+      // 目标高度约为画布高的 70%（衣服通常覆盖身体大部分）
+      const targetH = ch * 0.72;
+      const ih = l.img.naturalHeight;
+      l.scale = targetH / ih;
+      // 水平居中
+      const cw = CW();
+      const w = l.img.naturalWidth * l.scale;
+      l.x = (cw - w)/2;
+      l.y = ch*0.12;
+      l.rot = 0;
+      positionLayer(l);
+    });
+    document.querySelector('.fit-hint').textContent = t('fitDownloaded');
   });
 
   // 背景切换
@@ -754,6 +823,73 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   });
 
   // ===== 图层管理 =====
+  const autoCutToggle = document.getElementById('fitAutoCut');
+
+  // 自动去背景：基于边缘泛洪填充，把接近背景色的连通区域设为透明
+  // 返回处理后的 dataURL
+  function removeBackground(src, tolerance){
+    return new Promise((resolve)=>{
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = ()=>{
+        try {
+          const w = img.naturalWidth, h = img.naturalHeight;
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const data = ctx.getImageData(0, 0, w, h);
+          const px = data.data;
+          const n = w*h;
+
+          // 采样四个角 + 四条边的中点作为背景参考色
+          const corners = [[0,0],[w-1,0],[0,h-1],[w-1,h-1],
+                           [Math.floor(w/2),0],[Math.floor(w/2),h-1],
+                           [0,Math.floor(h/2)],[w-1,Math.floor(h/2)]];
+          let bgR=0,bgG=0,bgB=0;
+          corners.forEach(([x,y])=>{
+            const i=(y*w+x)*4;
+            bgR+=px[i]; bgG+=px[i+1]; bgB+=px[i+2];
+          });
+          bgR/=corners.length; bgG/=corners.length; bgB/=corners.length;
+
+          // 泛洪填充：从四边开始，把接近背景色的像素标记为透明
+          const tol = tolerance;
+          const visited = new Uint8Array(n);
+          const stack = [];
+          const isBg = (i)=>{
+            const dr=px[i]-bgR, dg=px[i+1]-bgG, db=px[i+2]-bgB;
+            return (dr*dr+dg*dg+db*db) <= tol*tol;
+          };
+          // 初始化栈：四条边
+          for(let x=0;x<w;x++){ stack.push(x); stack.push((h-1)*w+x); }
+          for(let y=0;y<h;y++){ stack.push(y*w); stack.push(y*w+w-1); }
+
+          while(stack.length){
+            const i = stack.pop();
+            if(visited[i]) continue;
+            if(!isBg(i*4)) continue;
+            visited[i] = 1;
+            px[i*4+3] = 0;  // 透明
+            const x = i%w, y = (i-x)/w;
+            if(x>0 && !visited[i-1]) stack.push(i-1);
+            if(x<w-1 && !visited[i+1]) stack.push(i+1);
+            if(y>0 && !visited[i-w]) stack.push(i-w);
+            if(y<h-1 && !visited[i+w]) stack.push(i+w);
+          }
+
+          ctx.putImageData(data, 0, 0);
+          resolve(c.toDataURL('image/png'));
+        } catch(err) {
+          // 跨域或处理失败时退回原图
+          resolve(src);
+        }
+      };
+      img.onerror = ()=>resolve(src);
+      img.src = src;
+    });
+  }
+
   function addLayer(d){
     const img = document.createElement('img');
     img.src = 'assets/'+d.画像;
@@ -761,6 +897,18 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     const layer = { id:'L'+(++_uid), d, img, x:40, y:40, scale:0.6, rot:0 };
     layers.push(layer);
     canvas.appendChild(img);
+
+    // 自动去背景
+    if(autoCutToggle.checked){
+      removeBackground(img.src, 55).then(url=>{
+        if(layer.img && layers.includes(layer)){  // 图层仍存在
+          layer.img.src = url;
+          // 重新计算尺寸（去背景后 naturalWidth/Height 不变，因为是同尺寸透明PNG）
+          positionLayer(layer);
+        }
+      });
+    }
+
     positionLayer(layer);
     selectLayer(layer.id);
     emptyEl.style.display='none';
@@ -805,6 +953,21 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     if(del){ e.stopPropagation(); removeLayer(del.dataset.del); return; }
     const l=e.target.closest('.layer'); if(l) selectLayer(l.dataset.id);
   });
+
+  // 层级置顶/置底（DOM 顺序即渲染顺序，后面的在上层）
+  function moveLayer(dir){
+    if(selected==null) return;
+    const i=layers.findIndex(l=>l.id===selected); if(i<0) return;
+    const j = dir==='up' ? layers.length-1 : 0;
+    if(i===j) return;
+    const [layer]=layers.splice(i,1);
+    layers.splice(dir==='up'?layers.length:0, 0, layer);
+    // 同步 DOM 顺序：把所有衣服 img 按新顺序重新 append（人像保持最底）
+    layers.forEach(l=>canvas.appendChild(l.img));
+    refreshLayers();
+  }
+  document.getElementById('fitLayerUp').addEventListener('click', ()=>moveLayer('up'));
+  document.getElementById('fitLayerDown').addEventListener('click', ()=>moveLayer('down'));
 
   // ===== 拖拽 / 缩放 / 旋转 =====
   let drag=null;
