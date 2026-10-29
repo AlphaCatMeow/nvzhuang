@@ -71,8 +71,25 @@ nvzhuang/
 | 字段 | 说明 |
 |---|---|
 | `id` | 编号（如 `SPR-0001`） |
-| `カテゴリ` | 日文分类名 |
-| `キーワード` | 英文关键词（空格分隔） |
+| `カテゴリ` | 分类（日文分类名，如「春」） |
+| `キーワード` | 关键词（英文，空格分隔） |
 | `サムネ` | 缩略图路径 |
 | `画像` | 展示图路径 |
 | `原寸` | 原尺寸 PNG 路径 |
+
+> 说明：`カテゴリ`、`キーワード`、`サムネ`、`画像`、`原寸` 是数据原始的日文字段名，为保持与原站数据兼容而保留。网站会在前端自动将它们本地化为中文或英文展示。
+
+### Data Fields (English)
+
+Each record in `data.js` contains the following fields:
+
+| Field | Description |
+|---|---|
+| `id` | Identifier (e.g. `SPR-0001`) |
+| `カテゴリ` | Category (Japanese category name, e.g. "春" for Spring) |
+| `キーワード` | Keywords (English, space-separated) |
+| `サムネ` | Thumbnail image path |
+| `画像` | Display image path |
+| `原寸` | Full-size PNG path |
+
+> Note: `カテゴリ`, `キーワード`, `サムネ`, `画像`, and `原寸` are the original Japanese field names kept for compatibility with the source data. The site localizes them to Chinese or English on the frontend automatically.
