@@ -17,6 +17,72 @@
 - **双向检索**：中文（白、蕾丝、连衣裙…）和英文（white、lace、dress…）关键词都能搜索
 - **关键词本地化**：中文模式自动将服装属性翻译为中文展示
 - **交互体验**：分类筛选、实时搜索、无限滚动加载、放大查看、键盘 ←/→ 切换、Esc 关闭、原尺寸 PNG 下载
+- **AI 试穿搭配台**：上传人像 + 选服装，在线预览、拖拽缩放、抠图合成，或一键 AI 换装（需自备后端）
+
+## 🤖 AI 换装（可选功能）
+
+「AI 换装」需要一个后端服务，把服装真实地「穿」到人像上。后端位于 `backend/`（GoFrame v2），支持**多模型可插拔**：
+
+| 模型别名 | 模型 | 协议 | 说明 |
+|---|---|---|---|
+| `gpt-image` | **GPT Image 2**（`gpt-image-2`） | OpenAI Images | 默认模型，官方当前主推 |
+| `doubao` | 豆包 Seedream（火山方舟） | 火山方舟 | 国内可用，无需科学上网 |
+| `gemini` | **Nano Banana 2**（`gemini-3.1-flash-image`） | Google generateContent | Google 图像模型 |
+| `qwen` / `zhipu` / `siliconflow` … | 通义万相 / 智谱 CogView / 硅基流动 | OpenAI Images 兼容 | 按需在配置中开启 |
+
+> 三个关键点都可配置：**API Key、Base URL、模型名**。加一个国内模型只需在配置里新增一段，无需改代码。
+
+### 配置模型
+
+编辑 `backend/manifest/config/config.yaml`（模板见 `config.example.yaml`）：
+
+```yaml
+llm:
+  models:
+    gpt-image:                     # 前端请求用的别名
+      provider: openai             # 协议：openai / doubao / gemini
+      apiKey: ""                   # 直接填 Key，或留空用环境变量
+      envKey: "OPENAI_API_KEY"     # 环境变量名（优先级高于 apiKey）
+      baseURL: "https://api.openai.com/v1"   # Base URL 可改（支持中转/代理）
+      model: "gpt-image-2"         # 真实模型名
+
+    doubao:                        # 豆包（国内可用）
+      provider: doubao
+      envKey: "ARK_API_KEY"
+      baseURL: "https://ark.cn-beijing.volces.com/api/v3"
+      model: "doubao-seedream-3-0-t2i-250415"
+
+    gemini:
+      provider: gemini
+      envKey: "GEMINI_API_KEY"
+      baseURL: "https://generativelanguage.googleapis.com/v1beta"
+      model: "gemini-3.1-flash-image"
+```
+
+**接入任意 OpenAI 兼容的国内生图模型**（通义万相、智谱、硅基流动等），加一段即可：
+
+```yaml
+    qwen:                          # 通义万相示例
+      provider: openai
+      envKey: "DASHSCOPE_API_KEY"
+      baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      model: "wanx2.1-t2i-turbo"
+```
+
+### 启动后端 & 对接前端
+
+```bash
+cd backend
+export OPENAI_API_KEY="sk-..."      # 按需注入对应 Key
+go run main.go                      # 服务监听 :8000
+```
+
+前端通过以下方式之一指向后端（优先级从高到低）：
+
+1. URL 参数：`https://你的前端/?tryon=http://localhost:8000`
+2. 全局变量：`window.AI_API_URL = "http://localhost:8000"`
+
+> 完整的 Docker 部署、Nginx 反代、安全加固说明见 [`backend/DEPLOY.md`](backend/DEPLOY.md)。
 
 ## 🚀 快速开始
 
@@ -38,11 +104,15 @@ npx serve .
 
 ```
 nvzhuang/
-├── index.html          # 页面结构 + 样式 + 交互逻辑（含双语字典）
+├── index.html          # 页面结构 + 样式 + 交互逻辑（含双语字典、AI 试穿搭配台）
 ├── data.js             # 1407 条服装数据（id / 分类 / 关键词 / 图片路径）
 ├── assets/
 │   ├── thumbs/         # 缩略图（webp，网格卡片用）
 │   └── img/            # 展示图（webp，弹窗放大用）
+├── backend/            # AI 换装后端（GoFrame v2，可选）
+│   ├── manifest/config/config.yaml        # 模型配置（Key / BaseURL / 模型名）
+│   ├── internal/logic/tryon/              # 模型适配器（openai / doubao / gemini）
+│   └── DEPLOY.md                          # 部署指南
 └── .gitignore
 ```
 

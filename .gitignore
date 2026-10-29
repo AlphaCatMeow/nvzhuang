@@ -6,6 +6,7 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+.idea/
 
 # 环境变量与密钥
 .env
