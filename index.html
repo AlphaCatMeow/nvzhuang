@@ -174,6 +174,17 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
 .btn-primary:hover{filter:brightness(1.08)}
 .btn-ghost{background:var(--panel);border:1px solid #4a525f;color:var(--tx)}
 .btn-ghost:hover{border-color:#6a7382}
+/* 预览模式：隐藏编辑辅助元素，呈现干净最终效果 */
+.fit-canvas.preview{border-style:solid;border-color:transparent}
+.fit-canvas.preview img.sel{outline:none}
+.fit-canvas.preview .fit-empty{display:none!important}
+/* 预览弹窗 */
+.preview-modal{position:fixed;inset:0;z-index:70;background:rgba(5,6,8,.92);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:24px}
+.preview-modal.open{display:flex}
+.preview-modal .pv-box{max-width:min(92vw,640px);max-height:78vh;display:flex;align-items:center;justify-content:center}
+.preview-modal img{max-width:100%;max-height:78vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6);background:#17191e}
+.preview-modal .pv-bar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.preview-modal .pv-bar button{min-height:48px;padding:0 22px;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer}
 @media (max-width:900px){
   .fit-body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;overflow:auto}
   .fit-side{border-left:0;border-top:1px solid var(--line)}
@@ -306,9 +317,19 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
       </div>
       <div class="fit-actions">
         <button type="button" class="btn-ghost" id="fitClear" data-i18n="fitClear">清空</button>
+        <button type="button" class="btn-ghost" id="fitPreview" data-i18n="fitPreview">预览</button>
         <button type="button" class="btn-primary" id="fitExport" data-i18n="fitExport">导出搭配图</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- 预览弹窗 -->
+<div class="preview-modal" id="previewModal" role="dialog" aria-modal="true" aria-label="预览">
+  <div class="pv-box"><img id="previewImg" alt="搭配预览"></div>
+  <div class="pv-bar">
+    <button type="button" class="btn-ghost" id="previewClose" data-i18n="fitPreviewClose">返回编辑</button>
+    <button type="button" class="btn-primary" id="previewExport" data-i18n="fitExport">导出这张图</button>
   </div>
 </div>
 
@@ -360,6 +381,7 @@ const I18N = {
     fitGarmentTitle: '选择服装', fitSearchPh: '搜索服装…',
     fitLayerTitle: '已添加的搭配层', fitClear: '清空', fitExport: '导出搭配图',
     fitNoLayer: '还没有添加服装', fitDownloaded: '搭配图已导出',
+    fitPreview: '预览', fitPreviewClose: '返回编辑', fitPreviewEmpty: '还没有可预览的内容，请先上传照片或添加服装',
   },
   en: {
     eyebrow: 'COSTUME-DB-01 · Costume Reference Gallery',
@@ -404,6 +426,7 @@ const I18N = {
     fitGarmentTitle: 'Choose outfit', fitSearchPh: 'Search outfits…',
     fitLayerTitle: 'Added layers', fitClear: 'Clear', fitExport: 'Export look',
     fitNoLayer: 'No outfits added yet', fitDownloaded: 'Look exported',
+    fitPreview: 'Preview', fitPreviewClose: 'Back to edit', fitPreviewEmpty: 'Nothing to preview yet — upload a photo or add outfits first',
   }
 };
 
@@ -833,18 +856,20 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     if(hint && layer) hint.textContent = `${Math.round(layer.scale*100)}% · ${Math.round(layer.rot)}°`;
   }
 
-  // ===== 清空 / 导出 =====
+  // ===== 清空 / 预览 / 导出 =====
   document.getElementById('fitClear').addEventListener('click', ()=>{
     layers.forEach(l=>l.img.remove()); layers=[]; selected=null;
     if(!personImg) emptyEl.style.display='flex';
     refreshLayers();
   });
 
-  document.getElementById('fitExport').addEventListener('click', ()=>{
+  // 把当前画布内容渲染到离屏 canvas（背景 + 人像 + 衣服层），scale 控制导出分辨率
+  function renderComposite(scale){
     const cw=CW(), ch=CH();
     const off=document.createElement('canvas');
-    off.width=cw; off.height=ch;
+    off.width=Math.round(cw*scale); off.height=Math.round(ch*scale);
     const ctx=off.getContext('2d');
+    ctx.scale(scale, scale);
     // 背景
     const bg=canvas.style.background;
     ctx.fillStyle = bg && bg!=='#17191e' ? bg : '#17191e';
@@ -866,6 +891,46 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       ctx.drawImage(l.img, -l.img.naturalWidth*l.scale/2, -l.img.naturalHeight*l.scale/2, l.img.naturalWidth*l.scale, l.img.naturalHeight*l.scale);
       ctx.restore();
     });
+    return off;
+  }
+
+  const previewModal = document.getElementById('previewModal');
+  const previewImg = document.getElementById('previewImg');
+  let previewDataURL = '';
+
+  // 预览模式切换（画布内，隐藏编辑辅助元素）
+  document.getElementById('fitPreview').addEventListener('click', ()=>{
+    if(!personImg && !layers.length){
+      document.querySelector('.fit-hint').textContent = t('fitPreviewEmpty');
+      return;
+    }
+    // 打开预览弹窗
+    previewDataURL = renderComposite(1).toDataURL('image/png');
+    previewImg.src = previewDataURL;
+    previewModal.classList.add('open');
+  });
+  document.getElementById('previewClose').addEventListener('click', ()=>previewModal.classList.remove('open'));
+  previewModal.addEventListener('click', e=>{ if(e.target===previewModal) previewModal.classList.remove('open'); });
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape' && previewModal.classList.contains('open')) previewModal.classList.remove('open');
+  });
+
+  // 预览弹窗内直接导出这张预览图
+  document.getElementById('previewExport').addEventListener('click', ()=>{
+    if(!previewDataURL) return;
+    const a=document.createElement('a');
+    a.href=previewDataURL;
+    a.download='搭配图-'+Date.now()+'.png';
+    a.click();
+  });
+
+  // 主导出按钮：导出高清 2x 预览图
+  document.getElementById('fitExport').addEventListener('click', ()=>{
+    if(!personImg && !layers.length){
+      document.querySelector('.fit-hint').textContent = t('fitPreviewEmpty');
+      return;
+    }
+    const off = renderComposite(2);  // 2x 高清导出
     const a=document.createElement('a');
     a.href=off.toDataURL('image/png');
     a.download='搭配图-'+Date.now()+'.png';
