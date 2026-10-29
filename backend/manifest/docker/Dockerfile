@@ -13,10 +13,14 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 # 运行阶段
 FROM alpine:3.19
 
+# 安装 ca-certificates 确保能够正常调用外部 HTTPS API（OpenAI / 火山方舟 / Google 等）
+RUN apk --no-cache add ca-certificates tzdata
+
 WORKDIR /app
 COPY --from=builder /app/main .
-# 复制配置（config.yaml 需在部署时通过环境变量注入 Key，或用 configmap 挂载）
-COPY manifest/config/config.yaml manifest/config/config.yaml
+# 复制配置文件（兼容 config.yaml 或 config.example.yaml）
+COPY manifest/config/config*.yaml manifest/config/
+RUN if [ ! -f manifest/config/config.yaml ]; then cp manifest/config/config.example.yaml manifest/config/config.yaml; fi
 
 EXPOSE 8000
 CMD ["./main"]

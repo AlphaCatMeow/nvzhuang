@@ -10,6 +10,15 @@
 |---|---|---|
 | ![中文模式](docs/screenshot-zh.png) | ![英文模式](docs/screenshot-en.png) | ![关键词搜索](docs/screenshot-search.png) |
 
+## 👗 AI 换装效果演示
+
+系统支持上传真实人像与选中的服装，通过 AI 生图大模型进行衣物迁移换装，实现精准保留面容、贴合人体形态的虚拟试穿效果：
+
+| ① 选中的服装（图 1） | ② 上传的模特照片（图 2） | ③ AI 换装合成效果（图 3） |
+|:---:|:---:|:---:|
+| <img src="docs/tryon-1.png" width="280" alt="选中的服装" /> | <img src="docs/tryon-2.png" width="280" alt="上传的模特照片" /> | <img src="docs/tryon-3.png" width="280" alt="AI 换装合成效果" /> |
+| **参考服装图**<br><sub>（图集中的精选女装）</sub> | **模特原图**<br><sub>（用户上传的人像日常照）</sub> | **AI 换装效果（图 1 + 图 2 ➔ 图 3）**<br><sub>（保留模特五官发型，自然融合服饰材质与剪裁）</sub> |
+
 ## ✨ 功能特性
 
 - **8 大分类**：春（215）/ 夏（254）/ 秋（244）/ 冬（253）/ 内衣（199）/ 派对（48）/ 泳装（54）/ 性感（140）
@@ -69,20 +78,56 @@ llm:
       model: "wanx2.1-t2i-turbo"
 ```
 
-### 启动后端 & 对接前端
+### 🚀 后端部署（优先推荐 Docker）
+
+后端推荐使用 **Docker / Docker Compose** 部署，无需在宿主机安装 Go 编译环境，开箱即用。
+
+#### 方式一：Docker Compose（推荐，最省心）
+
+```bash
+# 1. 复制环境变量模板并填入你的 Key（如国内免翻墙的豆包 ARK_API_KEY，或 OpenAI Key）
+cp backend/.env.example backend/.env
+
+# 2. 一键启动后端
+docker compose up -d
+
+# 服务启动后监听在 http://localhost:8000
+```
+
+#### 方式二：Docker Run 单命令运行
 
 ```bash
 cd backend
-export OPENAI_API_KEY="sk-..."      # 按需注入对应 Key
-go run main.go                      # 服务监听 :8000
+
+# 构建镜像
+docker build -f manifest/docker/Dockerfile -t costume-tryon .
+
+# 运行容器（按需注入模型 Key，例如豆包或 OpenAI）
+docker run -d --name costume-tryon \
+  -p 8000:8000 \
+  -e ARK_API_KEY="你的豆包ArkKey" \
+  -e OPENAI_API_KEY="sk-你的OpenAIKey" \
+  costume-tryon
 ```
 
-前端通过以下方式之一指向后端（优先级从高到低）：
+#### 方式三：无 Docker 本地运行
 
-1. URL 参数：`https://你的前端/?tryon=http://localhost:8000`
-2. 全局变量：`window.AI_API_URL = "http://localhost:8000"`
+- **Windows 用户**：直接双击 `backend/restart.bat` 一键自动编译并启动服务。
+- **命令行运行**：
+  ```bash
+  cd backend
+  export ARK_API_KEY="你的Key"   # Windows PowerShell 用 $env:ARK_API_KEY="你的Key"
+  go run main.go                 # 服务监听 :8000
+  ```
 
-> 完整的 Docker 部署、Nginx 反代、安全加固说明见 [`backend/DEPLOY.md`](backend/DEPLOY.md)。
+### 🔗 前端对接后端
+
+前端静态页面默认访问同机或指定后端，通过以下方式之一指定换装 API 服务地址（优先级从高到低）：
+
+1. **URL 参数**：`https://你的前端地址/?tryon=http://localhost:8000`
+2. **全局变量**：在 HTML 加载前配置 `window.AI_API_URL = "http://localhost:8000"`
+
+> 完整的多模型接入、生产环境 Nginx 反代与安全加固说明见 [`backend/DEPLOY.md`](backend/DEPLOY.md)。
 
 ## 🚀 快速开始
 
@@ -106,10 +151,15 @@ npx serve .
 nvzhuang/
 ├── index.html          # 页面结构 + 样式 + 交互逻辑（含双语字典、AI 试穿搭配台）
 ├── data.js             # 1407 条服装数据（id / 分类 / 关键词 / 图片路径）
+├── docker-compose.yml  # 一键启动后端 Docker 容器编排
 ├── assets/
 │   ├── thumbs/         # 缩略图（webp，网格卡片用）
 │   └── img/            # 展示图（webp，弹窗放大用）
+├── docs/               # 文档图片与试穿效果演示图
 ├── backend/            # AI 换装后端（GoFrame v2，可选）
+│   ├── docker-compose.yml                 # 后端 Docker Compose 配置
+│   ├── .env.example                       # 环境变量示例文件
+│   ├── restart.bat / build.bat            # Windows 本地一键启动/重新编译脚本
 │   ├── manifest/config/config.yaml        # 模型配置（Key / BaseURL / 模型名）
 │   ├── internal/logic/tryon/              # 模型适配器（openai / doubao / gemini）
 │   └── DEPLOY.md                          # 部署指南

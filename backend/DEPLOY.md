@@ -12,25 +12,44 @@
   - Google Gemini：`AIza...`（https://aistudio.google.com）
   - 其他：通义万相、智谱 CogView、硅基流动等 OpenAI 兼容服务均可接入
 
-## 二、两种部署方式
+## 二、推荐部署方式（优先 Docker）
 
-### 方式 A：Docker（推荐，最省事）
+### 方式 A：Docker Compose（首选推荐，最省事）
 
 ```bash
-# 1. 在本地（或服务器）构建镜像
+cd backend
+
+# 1. 复制环境变量示例文件
+cp .env.example .env
+
+# 2. 编辑 .env 文件，填入你使用的模型 API Key（按需填写，国内优先推荐豆包 ARK_API_KEY）
+# 例如：ARK_API_KEY=xxxx
+
+# 3. 一键构建并启动后台容器
+docker compose up -d
+
+# 查看日志
+docker compose logs -f
+```
+
+### 方式 B：Docker Run 单命令运行
+
+```bash
+# 1. 在 backend 目录构建镜像
 cd backend
 docker build -f manifest/docker/Dockerfile -t costume-tryon .
 
 # 2. 运行容器，通过环境变量注入 Key（按需填写，豆包用 ARK_API_KEY）
 docker run -d --name costume-tryon \
   -p 8000:8000 \
+  --restart unless-stopped \
   -e OPENAI_API_KEY="sk-你的key" \
   -e ARK_API_KEY="你的豆包ArkKey" \
   -e GEMINI_API_KEY="AIza你的key" \
   costume-tryon
 ```
 
-### 方式 B：直接编译运行（无 Docker）
+### 方式 C：直接编译运行（无 Docker）
 
 ```bash
 cd backend

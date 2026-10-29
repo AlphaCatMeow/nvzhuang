@@ -2,21 +2,59 @@
 
 基于 GoFrame v2 的 AI 换装（虚拟试衣）后端，为「衣装集」网站提供 `POST /tryon` 接口。
 
+## 效果演示
+
+用户上传人像照片（图 2）与选中的服装图（图 1），调用后端 AI 换装接口合成生成换装效果图（图 3）：
+
+| ① 选中的服装（图 1） | ② 上传的模特照片（图 2） | ③ AI 换装合成效果（图 3） |
+|:---:|:---:|:---:|
+| <img src="../docs/tryon-1.png" width="260" alt="服装图" /> | <img src="../docs/tryon-2.png" width="260" alt="模特照片" /> | <img src="../docs/tryon-3.png" width="260" alt="换装效果" /> |
+| **选定女装参考图** | **人物模特自拍原图** | **合成试穿效果（图 1 + 图 2 ➔ 图 3）** |
+
 ## 功能
 
 - 接收人像照片 + 服装图（base64），调用大模型生成换装结果图
-- 支持两种模型，可配置：
-  - **GPT-Image**（OpenAI，默认）
-  - **Gemini 2.5 Flash Image**（Google，即 "Banana Pro"）
+- 支持多模型配置化插拔：
+  - **GPT-Image 2**（OpenAI Images 协议）
+  - **豆包 Seedream**（火山方舟协议，国内免翻墙首选）
+  - **Nano Banana 2 / Gemini**（Google generateContent 协议）
+  - 其他 OpenAI 兼容模型（通义万相、智谱 CogView、硅基流动等）
 
-## 快速开始
+## 快速开始（优先 Docker）
+
+### 推荐方式：Docker Compose
 
 ```bash
 cd backend
-gf run main.go
-# 或
-go run main.go
+
+# 1. 复制环境变量并填入你的 Key（如 ARK_API_KEY 或 OPENAI_API_KEY）
+cp .env.example .env
+
+# 2. 一键启动
+docker compose up -d
 ```
+
+### 方式二：Docker 单容器运行
+
+```bash
+cd backend
+docker build -f manifest/docker/Dockerfile -t costume-tryon .
+
+# 注入对应的 Key 环境变量运行
+docker run -d --name costume-tryon -p 8000:8000 \
+  -e ARK_API_KEY="你的豆包ArkKey" \
+  -e OPENAI_API_KEY="sk-你的OpenAIKey" \
+  costume-tryon
+```
+
+### 方式三：本地直接运行
+
+- **Windows 用户**：直接双击运行 `restart.bat`。
+- **源码运行**：
+  ```bash
+  cd backend
+  go run main.go
+  ```
 
 服务默认监听 `:8000`。
 
