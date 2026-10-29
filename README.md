@@ -3,7 +3,14 @@
 一个深色主题的服装参考图集网站，收录 **1407 张** 人物不入镜的 AI 生成服装图像（2:3 比例），支持中英文双语浏览与检索。
 
 > 🔗 **在线预览**：https://paipiange.github.io/nvzhuang/  
-> 💡 **原作者推文 / 灵感来源**：X [@giaaibusi](https://x.com/giaaibusi)
+> 💡 **原作者推文 / 灵感来源**：X [@giaaibusi](https://x.com/giaaibusi)  
+> 🐧 **社区友链**：[LINUX DO (https://linux.do/)](https://linux.do/)
+
+## ⏱️ 10 秒了解本项目
+
+- 🆓 **免费使用（无需部署 / 无需 Key）**：1407 套 AI 服装参考图库浏览、分类筛选、中英双语双向检索、大图全屏查看、基础搭配台与同款跳转，由纯前端静态驱动，在线打开即可使用。
+- ⚙️ **自选扩展（需自建后端 / 需自备 Key）**：真实 AI 试衣换装功能依赖 `backend/` 的 GoFrame 服务。需自行配置大模型（如 GPT Image 2、豆包 Seedream 或 Gemini）的 API Key 与 Base URL，调用将消耗对应的第三方模型配额。
+- 📜 **合规与授权**：代码全部公开；图集素材允许非商业及创作自由使用，但禁止将图集本身二次打包再销售。详见 [合规审计报告](docs/LINUXDO_RELEASE_AUDIT.md)。
 
 ## 📸 预览
 
@@ -35,9 +42,9 @@
 
 | 模型别名 | 模型 | 协议 | 说明 |
 |---|---|---|---|
-| `gpt-image` | **GPT Image 2**（`gpt-image-2`） | OpenAI Images | 默认模型，官方当前主推 |
-| `doubao` | 豆包 Seedream（火山方舟） | 火山方舟 | 国内可用，无需科学上网 |
-| `gemini` | **Nano Banana 2**（`gemini-3.1-flash-image`） | Google generateContent | Google 图像模型 |
+| `gemini` | **Nano Banana 2**（`gemini-3.1-flash-image`） | Google generateContent | **默认模型**，对真人换装场景无 moderation 阻断 |
+| `doubao` | 豆包 Seedream（火山方舟） | 火山方舟 | 国内可用，无需代理网络 |
+| `gpt-image` | **GPT Image 2**（`gpt-image-2`） | OpenAI Images | 兼容 OpenAI 协议，支持第三方中转与代理 |
 | `qwen` / `zhipu` / `siliconflow` … | 通义万相 / 智谱 CogView / 硅基流动 | OpenAI Images 兼容 | 按需在配置中开启 |
 
 > 三个关键点都可配置：**API Key、Base URL、模型名**。加一个国内模型只需在配置里新增一段，无需改代码。
@@ -123,28 +130,29 @@ docker run -d --name costume-tryon \
 
 ### 🔗 前端对接后端
 
-前端静态页面默认访问同机或指定后端，通过以下方式之一指定换装 API 服务地址（优先级从高到低）：
+前端静态页面通过以下顺序识别换装后端地址（优先级从高到低）：
 
-1. **URL 参数**：`https://你的前端地址/?tryon=http://localhost:8000`
-2. **全局变量**：在 HTML 加载前配置 `window.AI_API_URL = "http://localhost:8000"`
+1. **全局变量**：在 HTML 加载前配置 `window.AI_API_URL = "http://localhost:8000"`
+2. **URL 参数**：`https://你的前端地址/?tryon=http://localhost:8000`
+3. **本地回退**：本地以 `localhost` 或 `127.0.0.1` 访问前端时，默认自动连接 `http://127.0.0.1:8000`
 
 > 完整的多模型接入、生产环境 Nginx 反代与安全加固说明见 [`backend/DEPLOY.md`](backend/DEPLOY.md)。
 
-## 🚀 快速开始
+## 🚀 前端本地启动
 
-本项目是纯静态站点，无需构建。任选一种方式运行：
+本项目前端是纯静态站点，无需构建。任选一种方式运行：
 
 ```bash
-# 方式一：Python 内置服务器
-python3 -m http.server 8000
+# 方式一：Python 内置服务器（推荐端口 3000，与后端 8000 端口独立不冲突）
+python3 -m http.server 3000
 
 # 方式二：Node 简单服务器
-npx serve .
+npx serve -l 3000 .
 
-# 方式三：直接双击 index.html（部分浏览器可能有跨域限制，推荐前两种）
+# 方式三：直接用现代浏览器打开 index.html
 ```
 
-然后访问 `http://localhost:8000`。
+启动后在浏览器打开 `http://localhost:3000`。若同时启动了后端，本地换装开箱即连。
 
 ## 📁 目录结构
 
@@ -179,11 +187,14 @@ nvzhuang/
 ?lang=en&q=white  # 组合使用
 ```
 
-## 💡 灵感来源与原作者鸣谢
+## 💡 灵感来源与社区友链
 
-本项目图像数据整理与创意灵感源自 X（Twitter）推文：
-- **原作者 / 灵感来源**：[X @giaaibusi](https://x.com/giaaibusi)
-- 特别感谢原作者对高质量 AI 服装图集的整理与创意分享！
+- **原作者 / 灵感来源**：[X @giaaibusi](https://x.com/giaaibusi) —— 诚挚鸣谢原作者对高质量 AI 服装图集的整理与创意分享！
+- **社区友链**：[LINUX DO (https://linux.do/)](https://linux.do/) —— 真诚、友善、团结、专业的开源与技术极客社区。
+- **审计与规范文档**：
+  - [项目现状与开源合规审计报告 (LINUXDO_RELEASE_AUDIT.md)](docs/LINUXDO_RELEASE_AUDIT.md)
+  - [图库内容合规与社区发布审查报告 (CONTENT_REVIEW.md)](docs/CONTENT_REVIEW.md)
+  - [Linux.do 推广发布前核验清单 (LINUXDO_PUBLISH_CHECKLIST.md)](docs/LINUXDO_PUBLISH_CHECKLIST.md)
 
 ## 📄 使用许可
 

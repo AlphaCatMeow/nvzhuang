@@ -174,6 +174,7 @@ footer a:hover{color:#fff;text-decoration:underline}
 .ai-model-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .ai-model-row .lbl{font-size:13px;color:var(--tx2)}
 .ai-model-row select{flex:1;min-height:38px;border:1px solid #4a525f;border-radius:9px;background:var(--panel);color:#dfe3ea;font-size:13px;padding:0 10px;cursor:pointer}
+.fit-tip-box{margin:6px 0 12px;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:var(--tx3)}
 .ai-picked{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border:1px dashed #4a525f;border-radius:9px;font-size:12px;color:var(--tx3);background:rgba(26,30,36,.5);min-height:22px}
 .ai-picked.has{color:var(--tx);border-style:solid;border-color:var(--ac);background:rgba(143,180,255,.08)}
 .ai-picked.has b{color:var(--ac);font-weight:700}
@@ -272,7 +273,13 @@ footer a:hover{color:#fff;text-decoration:underline}
 
 <footer id="foot">
   <div data-i18n="footerNote">衣装集 COSTUME-DB-01 · AI 生成服装参照图像 · 可免费用于作品创作</div>
-  <div class="foot-source"><span data-i18n="footerCredit">灵感来源与原作者 X 推文：</span><a href="https://x.com/giaaibusi" target="_blank" rel="noopener noreferrer">@giaaibusi</a></div>
+  <div class="foot-source">
+    <span data-i18n="footerCredit">灵感来源与原作者 X 推文：</span><a href="https://x.com/giaaibusi" target="_blank" rel="noopener noreferrer">@giaaibusi</a>
+    <span class="sep"> · </span>
+    <span data-i18n="footerCommunity">社区友链：</span><a href="https://linux.do/" target="_blank" rel="noopener noreferrer">LINUX DO</a>
+    <span class="sep"> · </span>
+    <a href="https://github.com/paipiange/nvzhuang" target="_blank" rel="noopener noreferrer">⭐ GitHub 源码</a>
+  </div>
 </footer>
 
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="放大显示">
@@ -337,6 +344,7 @@ footer a:hover{color:#fff;text-decoration:underline}
             <option value="doubao" data-i18n="aiModelDoubao">豆包 Seedream（国内）</option>
           </select>
         </div>
+        <div class="fit-tip-box" data-i18n="fitCostTip">💡 提示：图库浏览与选款完全免费；AI 换装需自建后端并配置模型 API Key，可能产生第三方调用费用。</div>
         <div class="ai-picked" id="aiPicked" data-i18n="aiPickedNone">未选服装</div>
         <button type="button" class="ai-gen-btn" id="aiGenerate" data-i18n="aiGenerate">开始 AI 换装</button>
         <div class="ai-result">
@@ -398,6 +406,7 @@ const I18N = {
     sourceCode: '源代码',
     inspiration: '灵感来源',
     footerCredit: '灵感来源与原作者 X 推文：',
+    footerCommunity: '社区友链：',
     fitBack: '返回图库', fitTitle: 'AI 试穿',
     fitHint: '上传头像 → 选衣服 → 选模型 → 生成效果',
     fitEmptyTitle: '先上传一张人像照片', fitEmptySub: '也可以先在右侧选衣服摆上去',
@@ -420,6 +429,7 @@ const I18N = {
     aiResultNone: '生成结果会显示在这里',
     aiTryThis: 'AI 试穿这套', aiTryCard: 'AI 试穿',
     buySame: '购买同款',
+    fitCostTip: '💡 提示：图库浏览与选款完全免费；AI 换装需自建后端并配置模型 API Key，可能产生第三方调用费用。',
   },
   en: {
     eyebrow: 'COSTUME-DB-01 · Costume Reference Gallery',
@@ -459,6 +469,7 @@ const I18N = {
     sourceCode: 'Source code',
     inspiration: 'Inspiration',
     footerCredit: 'Inspired by & original X author: ',
+    footerCommunity: 'Community: ',
     fitBack: 'Back to gallery', fitTitle: 'AI Try-On',
     fitHint: 'Upload photo → pick garment → choose model → generate',
     fitEmptyTitle: 'Upload a person photo first', fitEmptySub: 'Or pick outfits on the right to start',
@@ -481,6 +492,7 @@ const I18N = {
     aiResultNone: 'The result will appear here',
     aiTryThis: 'AI try-on this look', aiTryCard: 'AI try-on',
     buySame: 'Buy This Look',
+    fitCostTip: '💡 Note: Gallery browsing is 100% free; AI try-on requires a self-hosted backend and your own API key (model fees apply).',
   }
 };
 
@@ -665,6 +677,28 @@ function showM(){
   $('#mcat').textContent=catName(d.カテゴリ);
   $('#mdesc').textContent=d.キーワード.split(' ').map(wordName).join(' · ');
   const dl=$('#mdl');dl.href=d.原寸;dl.setAttribute('download',d.id+'.png');
+  dl.onclick = e => {
+    // 若原寸路径为本地相对路径 png/，且可能未部署，做平滑探测回退
+    if (d.原寸 && d.原寸.startsWith('png/')) {
+      e.preventDefault();
+      fetch(d.原寸, { method: 'HEAD' }).then(res => {
+        const a = document.createElement('a');
+        if (res.ok) {
+          a.href = d.原寸;
+          a.download = d.id + '.png';
+        } else {
+          a.href = 'assets/' + d.画像;
+          a.download = d.id + '.webp';
+        }
+        a.click();
+      }).catch(() => {
+        const a = document.createElement('a');
+        a.href = 'assets/' + d.画像;
+        a.download = d.id + '.webp';
+        a.click();
+      });
+    }
+  };
   const mbuy=$('#mbuy');if(mbuy)mbuy.href='https://paipiange.com/nvzhuang.html?code='+encodeURIComponent(d.id);
 }
 function step(n){const j=MI+n;if(j<0||j>=VIEW.length)return;MI=j;if(j>=S.n)addMore();showM()}

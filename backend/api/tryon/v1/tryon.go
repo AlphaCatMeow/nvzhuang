@@ -9,8 +9,8 @@ type TryonReq struct {
 	PersonImage string `json:"person_image" v:"required" dc:"人像照片，base64编码"`
 	// 服装图（base64）
 	GarmentImage string `json:"garment_image" v:"required" dc:"服装图，base64编码"`
-	// 模型选择：gpt-image / doubao / gemini（可在后端 config.yaml 的 llm.models 中扩展），默认 gpt-image
-	Model string `json:"model" d:"gpt-image" dc:"模型别名：gpt-image / doubao / gemini（可在 config.yaml 扩展）"`
+	// 模型选择：gemini / gpt-image / doubao（可在后端 config.yaml 的 llm.models 中扩展），默认 gemini
+	Model string `json:"model" d:"gemini" dc:"模型别名：gemini / gpt-image / doubao（可在 config.yaml 扩展）"`
 	// 生成尺寸：1024x1024 / 1024x1536 / 1536x1024
 	Size string `json:"size" d:"1024x1536" dc:"输出尺寸"`
 	// 是否保留人物面部（保持同一个人）

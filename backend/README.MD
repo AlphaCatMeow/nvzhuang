@@ -85,7 +85,7 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
 {
   "person_image": "人像照片 base64",
   "garment_image": "服装图 base64",
-  "model": "gpt-image",
+  "model": "gemini",
   "size": "1024x1536",
   "keep_face": true,
   "lang": "zh"
@@ -96,7 +96,7 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
 |---|---|---|
 | person_image | 人像照片（全身/半身站立照），base64 | 必填 |
 | garment_image | 服装图，base64 | 必填 |
-| model | `gpt-image` 或 `gemini` | `gpt-image` |
+| model | `gemini` / `gpt-image` / `doubao` | `gemini` |
 | size | 输出尺寸 `1024x1024`/`1024x1536`/`1536x1024` | `1024x1536` |
 | lang | 提示词语言 `zh`/`en` | `zh` |
 
@@ -105,7 +105,7 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
 ```json
 {
   "image": "换装结果图 base64",
-  "model": "gpt-image",
+  "model": "gemini",
   "prompt": "实际使用的提示词"
 }
 ```
