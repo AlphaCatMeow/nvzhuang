@@ -12,6 +12,7 @@ gf
 main
 main.exe
 main.exe~
+*.log
 output/
 manifest/output/
 temp/
