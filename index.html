@@ -764,10 +764,11 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   applyLang = function(){ _origApplyLang(); if(fitEl.classList.contains('open')) refreshGarments(); refreshPicked(); };
 
   // ===== AI 换装 =====
-  // 后端地址：默认同源 /api，可通过 URL 参数 ?tryon= 或全局常量覆盖
+  // 后端地址：优先读取 window.AI_API_URL 或 URL 参数 ?tryon=；本地访问时默认 fallback 到 http://127.0.0.1:8000
   const AI_API = (window.AI_API_URL) || (()=>{
     const p = new URLSearchParams(location.search).get('tryon');
     if(p) return p.replace(/\/+$/,'');
+    if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:') return 'http://127.0.0.1:8000';
     return '';  // 空 = 未配置，点击时提示
   })();
 
