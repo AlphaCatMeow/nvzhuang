@@ -17,6 +17,17 @@ type TryonReq struct {
 	KeepFace bool `json:"keep_face" d:"true" dc:"是否保持人物面部一致"`
 	// 语言：zh / en
 	Lang string `json:"lang" d:"zh" dc:"提示词语言"`
+	// 浏览器端自定义模型配置。仅用于当前请求，后端不得持久化或记录其中的 Key/Base URL。
+	ClientConfig *ClientModelConfig `json:"client_config,omitempty" dc:"当前请求临时使用的用户模型配置"`
+}
+
+// ClientModelConfig 用户在浏览器设置中心保存的模型配置。
+// 该结构只在一次请求的内存中使用，不写入配置文件、数据库或日志。
+type ClientModelConfig struct {
+	Provider string `json:"provider" v:"in:openai,doubao,gemini" dc:"协议类型：openai / doubao / gemini"`
+	BaseURL  string `json:"base_url" dc:"模型服务 Base URL"`
+	APIKey   string `json:"api_key" dc:"模型服务 API Key（敏感，仅本次请求使用）"`
+	Model    string `json:"model" dc:"模型服务侧真实模型名"`
 }
 
 // TryonRes 换装响应

@@ -24,19 +24,16 @@ if not defined FOUND (
 )
 echo.
 
-REM ---- 2. 检查可执行文件 ----
-echo [2/3] 检查 main.exe（如需重新编译请手动运行 build.bat）...
+REM ---- 2. 每次都重新编译，避免源码已更新但仍启动旧 main.exe ----
+echo [2/3] 正在重新编译 main.exe...
 if exist "main.exe~" del /f /q "main.exe~" >nul 2>&1
-if not exist "main.exe" (
-    echo       未找到 main.exe，开始编译...
-    go build -o main.exe .
-    if errorlevel 1 (
-        echo       [错误] 编译失败，请检查 Go 环境。
-        pause
-        exit /b 1
-    )
-    echo       编译完成。
+go build -o main.exe .
+if errorlevel 1 (
+    echo       [错误] 编译失败，请检查 Go 环境和上方错误信息。
+    pause
+    exit /b 1
 )
+echo       编译完成。
 echo
 
 

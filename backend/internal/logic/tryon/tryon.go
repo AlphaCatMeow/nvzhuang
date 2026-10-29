@@ -2,13 +2,19 @@ package tryon
 
 import (
 	"context"
+	"strings"
 
 	"github.com/gogf/gf/v2/errors/gerror"
-	"github.com/gogf/gf/v2/frame/g"
 )
 
 // DoTryon 执行换装：选择模型 → 构建提示词 → 调用生成 → 返回结果
 func DoTryon(ctx context.Context, personB64, garmentB64, model, size, lang string) (resultB64, usedModel, usedPrompt string, err error) {
+	return DoTryonWithClientConfig(ctx, personB64, garmentB64, model, size, lang, nil)
+}
+
+// DoTryonWithClientConfig 支持请求级临时模型配置。
+// clientConfig 不会进入全局配置、缓存、数据库或日志。
+func DoTryonWithClientConfig(ctx context.Context, personB64, garmentB64, model, size, lang string, clientConfig *ModelConfig) (resultB64, usedModel, usedPrompt string, err error) {
 	// 参数校验
 	if personB64 == "" {
 		return "", "", "", gerror.New("人像照片不能为空")
@@ -29,14 +35,19 @@ func DoTryon(ctx context.Context, personB64, garmentB64, model, size, lang strin
 		model = "gemini"
 	}
 
-	gen, err := NewGenerator(ctx, model)
+	var gen ImageGenerator
+	if clientConfig != nil {
+		gen, err = NewGeneratorFromClientConfig(clientConfig)
+	} else {
+		gen, err = NewGenerator(ctx, model)
+	}
 	if err != nil {
 		return "", "", "", err
 	}
 
 	// 构建提示词：Gemini 协议用英文模板，其余（GPT-Image / 豆包等）按语言选择
 	var promptStr string
-	if gen.Name() == "gemini" {
+	if (clientConfig != nil && strings.EqualFold(clientConfig.Provider, "gemini")) || gen.Name() == "gemini" {
 		promptStr = BuildGemini(lang)
 	} else {
 		promptStr = BuildGPT(lang)
@@ -45,7 +56,7 @@ func DoTryon(ctx context.Context, personB64, garmentB64, model, size, lang strin
 	// 调用生成
 	result, err := gen.Generate(ctx, personB64, garmentB64, promptStr, size)
 	if err != nil {
-		g.Log().Errorf(ctx, "换装生成失败 model=%s: %v", model, err)
+		// 不记录原始错误：网络错误可能包含用户自定义 Base URL，供应商响应也可能含敏感信息。
 		return "", "", "", gerror.Wrap(err, "换装生成失败，请稍后重试")
 	}
 

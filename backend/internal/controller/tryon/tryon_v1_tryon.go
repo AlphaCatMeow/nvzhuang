@@ -18,7 +18,26 @@ func NewV1() *ControllerV1 {
 }
 
 func (c *ControllerV1) Tryon(ctx context.Context, req *v1.TryonReq) (res *v1.TryonRes, err error) {
-	imageB64, model, prompt, err := tryon.DoTryon(ctx, req.PersonImage, req.GarmentImage, req.Model, req.Size, req.Lang)
+	var clientConfig *tryon.ModelConfig
+	if req.ClientConfig != nil {
+		clientConfig = &tryon.ModelConfig{
+			Name:     "browser-custom",
+			Provider: req.ClientConfig.Provider,
+			APIKey:   req.ClientConfig.APIKey,
+			BaseURL:  req.ClientConfig.BaseURL,
+			Model:    req.ClientConfig.Model,
+		}
+	}
+
+	imageB64, model, prompt, err := tryon.DoTryonWithClientConfig(
+		ctx,
+		req.PersonImage,
+		req.GarmentImage,
+		req.Model,
+		req.Size,
+		req.Lang,
+		clientConfig,
+	)
 	if err != nil {
 		return nil, err
 	}

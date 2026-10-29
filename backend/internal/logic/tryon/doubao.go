@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // Doubao 火山方舟（豆包 Seedream）图像生成适配器。
@@ -29,7 +28,7 @@ func NewDoubao(cfg *ModelConfig) *Doubao {
 		baseURL: strings.TrimRight(cfg.BaseURL, "/"),
 		model:   cfg.Model,
 		name:    cfg.Name,
-		client:  &http.Client{Timeout: 180 * time.Second},
+		client:  newModelHTTPClient(cfg.ClientProvided),
 	}
 }
 
@@ -42,12 +41,12 @@ func (d *Doubao) Name() string {
 
 // doubaoRequest 豆包图片生成请求体（多图生图）
 type doubaoRequest struct {
-	Model        string   `json:"model"`
-	Prompt       string   `json:"prompt"`
-	Image        []string `json:"image,omitempty"`        // 参考图 URL（多图生图）
-	Size         string   `json:"size,omitempty"`         // 如 "2048x2048" / "1024x1536"
-	ResponseFormat string `json:"response_format,omitempty"` // url / b64_json
-	Watermark    bool     `json:"watermark,omitempty"`
+	Model          string   `json:"model"`
+	Prompt         string   `json:"prompt"`
+	Image          []string `json:"image,omitempty"`           // 参考图 URL（多图生图）
+	Size           string   `json:"size,omitempty"`            // 如 "2048x2048" / "1024x1536"
+	ResponseFormat string   `json:"response_format,omitempty"` // url / b64_json
+	Watermark      bool     `json:"watermark,omitempty"`
 }
 
 // doubaoResponse 豆包图片生成响应
@@ -88,14 +87,14 @@ func (d *Doubao) Generate(ctx context.Context, personB64, garmentB64, prompt, si
 
 	req, err := http.NewRequestWithContext(ctx, "POST", d.baseURL+"/images/generations", bytes.NewReader(body))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("模型服务请求创建失败")
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+d.apiKey)
 
 	resp, err := d.client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("无法连接模型服务")
 	}
 	defer resp.Body.Close()
 
@@ -129,11 +128,11 @@ func (d *Doubao) Generate(ctx context.Context, personB64, garmentB64, prompt, si
 func (d *Doubao) downloadImage(ctx context.Context, url string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("结果图片地址无效")
 	}
 	resp, err := d.client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("无法下载模型结果图片")
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)

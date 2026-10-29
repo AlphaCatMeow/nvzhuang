@@ -3,7 +3,11 @@ package tryon
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 )
@@ -24,6 +28,8 @@ type ModelConfig struct {
 	BaseURL  string // 接口地址（可配置，支持第三方/国内服务商）
 	Model    string // 服务商侧真实模型名
 	EnvKey   string // 覆盖用的环境变量名
+	// ClientProvided 表示配置来自浏览器；启用后 HTTP 客户端会阻止内网/保留地址，降低 SSRF 风险。
+	ClientProvided bool
 }
 
 // loadModelConfig 从配置文件加载指定模型的配置，并允许环境变量覆盖
@@ -49,6 +55,9 @@ func loadModelConfig(ctx context.Context, alias string) (*ModelConfig, error) {
 	// 未在 models 列表找到时，回退到旧的固定 key（兼容）
 	if cfg.Model == "" && cfg.BaseURL == "" && cfg.APIKey == "" {
 		cfg = loadLegacyConfig(ctx, alias)
+	}
+	if cfg == nil {
+		return nil, fmt.Errorf("模型 %s 未配置（当前请求可能来自不支持个人模型配置的旧前端或旧后端）", alias)
 	}
 
 	if cfg.APIKey == "" {
@@ -89,6 +98,74 @@ func NewGenerator(ctx context.Context, alias string) (ImageGenerator, error) {
 	if err != nil {
 		return nil, err
 	}
+	return newGeneratorFromConfig(cfg)
+}
+
+// NewGeneratorFromClientConfig 创建仅用于当前请求的模型适配器。
+// 配置来自浏览器，必须完整校验；函数不会把配置写入任何全局状态或持久化存储。
+func NewGeneratorFromClientConfig(cfg *ModelConfig) (ImageGenerator, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("个人模型配置不能为空")
+	}
+
+	clean := &ModelConfig{
+		Name:           "browser-custom",
+		Provider:       strings.ToLower(strings.TrimSpace(cfg.Provider)),
+		APIKey:         strings.TrimSpace(cfg.APIKey),
+		BaseURL:        strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/"),
+		Model:          strings.TrimSpace(cfg.Model),
+		ClientProvided: true,
+	}
+	if err := validateClientModelConfig(clean); err != nil {
+		return nil, err
+	}
+	return newGeneratorFromConfig(clean)
+}
+
+func newModelHTTPClient(restrictPrivateNetwork bool) *http.Client {
+	client := &http.Client{Timeout: 180 * time.Second}
+	if !restrictPrivateNetwork {
+		return client
+	}
+
+	dialer := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// 用户可控 URL 不走系统代理，避免代理代为访问内网地址而绕过下面的目标 IP 校验。
+	transport.Proxy = nil
+	transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(address)
+		if err != nil {
+			return nil, fmt.Errorf("模型服务地址无效")
+		}
+		ips, err := net.DefaultResolver.LookupIP(ctx, "ip", host)
+		if err != nil || len(ips) == 0 {
+			return nil, fmt.Errorf("模型服务域名解析失败")
+		}
+		foundPublic := false
+		for _, ip := range ips {
+			if isForbiddenClientIP(ip) {
+				continue
+			}
+			foundPublic = true
+			conn, dialErr := dialer.DialContext(ctx, network, net.JoinHostPort(ip.String(), port))
+			if dialErr == nil {
+				return conn, nil
+			}
+		}
+		if !foundPublic {
+			return nil, fmt.Errorf("模型服务地址不允许访问")
+		}
+		return nil, fmt.Errorf("无法连接模型服务")
+	}
+	client.Transport = transport
+	return client
+}
+
+func isForbiddenClientIP(ip net.IP) bool {
+	return !ip.IsGlobalUnicast() || ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast()
+}
+
+func newGeneratorFromConfig(cfg *ModelConfig) (ImageGenerator, error) {
 
 	switch strings.ToLower(cfg.Provider) {
 	case "doubao", "ark", "volc", "volcengine", "huoshan":
@@ -102,6 +179,38 @@ func NewGenerator(ctx context.Context, alias string) (ImageGenerator, error) {
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s (supported: openai, doubao, gemini)", cfg.Provider)
 	}
+}
+
+func validateClientModelConfig(cfg *ModelConfig) error {
+	if cfg.Provider != "openai" && cfg.Provider != "doubao" && cfg.Provider != "gemini" {
+		return fmt.Errorf("不支持的协议类型")
+	}
+	if cfg.APIKey == "" || len(cfg.APIKey) > 4096 {
+		return fmt.Errorf("API Key 不能为空或过长")
+	}
+	if cfg.Model == "" || len(cfg.Model) > 200 || strings.ContainsAny(cfg.Model, "\r\n\t ?#%\\") {
+		return fmt.Errorf("模型名不能为空或格式不正确")
+	}
+	if cfg.BaseURL == "" || len(cfg.BaseURL) > 2048 {
+		return fmt.Errorf("Base URL 不能为空或过长")
+	}
+
+	u, err := url.Parse(cfg.BaseURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
+		return fmt.Errorf("Base URL 必须是有效的 HTTP/HTTPS 地址")
+	}
+	if u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return fmt.Errorf("Base URL 不能包含账号、查询参数或片段")
+	}
+
+	host := strings.ToLower(strings.TrimSuffix(u.Hostname(), "."))
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return fmt.Errorf("Base URL 不允许指向本机地址")
+	}
+	if ip := net.ParseIP(host); ip != nil && (ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast()) {
+		return fmt.Errorf("Base URL 不允许指向内网或保留地址")
+	}
+	return nil
 }
 
 // getKey 优先取环境变量，其次取配置文件

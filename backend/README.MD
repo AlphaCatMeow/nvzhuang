@@ -88,7 +88,13 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
   "model": "gemini",
   "size": "1024x1536",
   "keep_face": true,
-  "lang": "zh"
+  "lang": "zh",
+  "client_config": {
+    "provider": "gemini",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta",
+    "api_key": "仅本次请求使用的 Key",
+    "model": "gemini-3.1-flash-image"
+  }
 }
 ```
 
@@ -99,6 +105,9 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
 | model | `gemini` / `gpt-image` / `doubao` | `gemini` |
 | size | 输出尺寸 `1024x1024`/`1024x1536`/`1536x1024` | `1024x1536` |
 | lang | 提示词语言 `zh`/`en` | `zh` |
+| client_config | 可选的浏览器个人模型配置；仅在当前请求内存中使用，不持久化、不记录 Key/Base URL | 空（使用服务器预设） |
+
+`client_config.provider` 支持 `openai`、`doubao`、`gemini`。个人 Base URL 必须是 HTTP/HTTPS 公网地址，且不能包含账号、查询参数或片段；localhost、内网和保留地址会被拒绝，以降低 SSRF 风险。
 
 响应：
 

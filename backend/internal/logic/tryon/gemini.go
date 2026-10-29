@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // Gemini Google Gemini 图像生成适配器
@@ -27,7 +26,7 @@ func NewGemini(cfg *ModelConfig) *Gemini {
 		baseURL: strings.TrimRight(cfg.BaseURL, "/"),
 		model:   cfg.Model,
 		name:    cfg.Name,
-		client:  &http.Client{Timeout: 180 * time.Second},
+		client:  newModelHTTPClient(cfg.ClientProvided),
 	}
 }
 
@@ -103,16 +102,18 @@ func (g *Gemini) Generate(ctx context.Context, personB64, garmentB64, prompt, si
 		return "", err
 	}
 
-	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", g.baseURL, g.model, g.apiKey)
+	url := fmt.Sprintf("%s/models/%s:generateContent", g.baseURL, g.model)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("模型服务请求创建失败")
 	}
 	req.Header.Set("Content-Type", "application/json")
+	// Key 放在请求头，避免出现在 URL、代理访问日志或网络错误文本中。
+	req.Header.Set("x-goog-api-key", g.apiKey)
 
 	resp, err := g.client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("无法连接模型服务")
 	}
 	defer resp.Body.Close()
 

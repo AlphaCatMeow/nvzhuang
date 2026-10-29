@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 // OpenAIImages OpenAI Images API 兼容适配器。
@@ -31,7 +30,7 @@ func NewOpenAIImages(cfg *ModelConfig) *OpenAIImages {
 		baseURL: strings.TrimRight(cfg.BaseURL, "/"),
 		model:   cfg.Model,
 		name:    cfg.Name,
-		client:  &http.Client{Timeout: 180 * time.Second},
+		client:  newModelHTTPClient(cfg.ClientProvided),
 	}
 }
 
@@ -93,8 +92,8 @@ func (o *OpenAIImages) Generate(ctx context.Context, personB64, garmentB64, prom
 	// 火山方舟式多图生图协议：prompt 必填 + image[] 传参考图，返回 b64_json。
 	// 这里统一用 prompt + image[]，对官方 OpenAI 协议则由后端中转站自行兼容。
 	reqBody := gptImageRequest{
-		Model:   o.model,
-		Prompt:  prompt,
+		Model:  o.model,
+		Prompt: prompt,
 		Image: []string{
 			"data:image/png;base64," + ensureBase64(personB64),
 			"data:image/png;base64," + ensureBase64(garmentB64),
@@ -110,14 +109,14 @@ func (o *OpenAIImages) Generate(ctx context.Context, personB64, garmentB64, prom
 
 	req, err := http.NewRequestWithContext(ctx, "POST", o.baseURL+"/images/generations", bytes.NewReader(body))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("模型服务请求创建失败")
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+o.apiKey)
 
 	resp, err := o.client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("无法连接模型服务")
 	}
 	defer resp.Body.Close()
 
@@ -150,11 +149,11 @@ func (o *OpenAIImages) Generate(ctx context.Context, personB64, garmentB64, prom
 func (o *OpenAIImages) downloadImage(ctx context.Context, url string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("结果图片地址无效")
 	}
 	resp, err := o.client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("无法下载模型结果图片")
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
