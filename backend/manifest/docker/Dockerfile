@@ -20,6 +20,7 @@ WORKDIR /app
 COPY --from=builder /app/main .
 # 复制配置文件（兼容 config.yaml 或 config.example.yaml）
 COPY manifest/config/config*.yaml manifest/config/
+COPY workflows workflows/
 RUN if [ ! -f manifest/config/config.yaml ]; then cp manifest/config/config.example.yaml manifest/config/config.yaml; fi
 
 EXPOSE 8000

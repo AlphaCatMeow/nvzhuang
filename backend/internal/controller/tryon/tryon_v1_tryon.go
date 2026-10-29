@@ -47,3 +47,18 @@ func (c *ControllerV1) Tryon(ctx context.Context, req *v1.TryonReq) (res *v1.Try
 		Prompt: prompt,
 	}, nil
 }
+
+func (c *ControllerV1) ComfyUIHealth(ctx context.Context, req *v1.ComfyUIHealthReq) (res *v1.ComfyUIHealthRes, err error) {
+	model, healthErr := tryon.CheckComfyUI(ctx)
+	if healthErr != nil {
+		return &v1.ComfyUIHealthRes{
+			Available: false,
+			Message:   "本地 ComfyUI 或固定工作流不可用",
+		}, nil
+	}
+	return &v1.ComfyUIHealthRes{
+		Available: true,
+		Model:     model,
+		Message:   "本地 ComfyUI 固定工作流可用",
+	}, nil
+}

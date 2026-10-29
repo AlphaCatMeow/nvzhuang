@@ -39,3 +39,13 @@ type TryonRes struct {
 	// 提示词（调试用，可空）
 	Prompt string `json:"prompt,omitempty" dc:"实际使用的提示词"`
 }
+
+type ComfyUIHealthReq struct {
+	g.Meta `path:"/comfyui/health" method:"get" tags:"换装" summary:"检查本地 ComfyUI 固定工作流"`
+}
+
+type ComfyUIHealthRes struct {
+	Available bool   `json:"available"`
+	Model     string `json:"model,omitempty"`
+	Message   string `json:"message"`
+}

@@ -120,6 +120,21 @@ llm:
       baseURL: "https://generativelanguage.googleapis.com/v1beta"
       model: "gemini-3.1-flash-image"
 
+    # 本地 ComfyUI 固定工作流。仅供运行在用户本机的后端使用；浏览器不能覆盖此地址或工作流路径。
+    comfyui:
+      provider: comfyui
+      baseURL: "http://127.0.0.1:8188"
+      model: "h3-ref2va-still"
+      workflowPath: "workflows/comfyui_h3_ref2va_still_api.json"
+      personNode: "16"
+      garmentNode: "17"
+      promptNode: "6"
+      seedNode: "10"
+      seed: 246813579 # 已验证的稳定种子；设为 -1 时每次随机
+      outputNode: "19"
+      pollIntervalMs: 1000
+      timeoutSeconds: 900
+
     # 以下为可选的国内模型示例（默认注释掉，按需开启）
     # 通义万相（阿里云百炼，OpenAI 兼容）
     # qwen:

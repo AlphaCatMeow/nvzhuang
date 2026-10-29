@@ -18,6 +18,7 @@
   - **GPT-Image 2**（OpenAI Images 协议）
   - **豆包 Seedream**（火山方舟协议，国内免翻墙首选）
   - **Nano Banana 2 / Gemini**（Google generateContent 协议）
+  - **ComfyUI 本地**（固定 H3 Ref2VA 工作流，无需云端 API Key）
   - 其他 OpenAI 兼容模型（通义万相、智谱 CogView、硅基流动等）
 
 ## 快速开始（优先 Docker）
@@ -57,6 +58,19 @@ docker run -d --name costume-tryon -p 8000:8000 \
   ```
 
 服务默认监听 `:8000`。
+
+## ComfyUI 本地模式
+
+第一阶段使用服务端固定工作流 `workflows/comfyui_h3_ref2va_still_api.json`。后端会上传人物图和服装图、提交 `/prompt`，通过 `/history/{prompt_id}` 轮询状态，再从 `/view` 读取经过 README 测试图验证的早期合成帧 PNG。
+
+1. 启动本机 ComfyUI，默认地址为 `http://127.0.0.1:8188`。
+2. 确认固定工作流引用的 H3、Qwen3-VL、ClipProj、LoRA、视频 VAE 和音频 VAE 已放入 ComfyUI 对应模型目录，并已安装工作流所需自定义节点。
+3. 如节点 ID 或模型文件名不同，只修改本机忽略提交的 `manifest/config/config.yaml` 和固定工作流 JSON；不要把绝对路径、个人目录或密钥写入仓库。
+4. 启动本后端，在网页设置中心启用“使用我自己的模型配置”，选择“ComfyUI 本地”，点击“测试连接”后保存。
+
+默认节点映射：人物图 `16`、服装图 `17`、提示词 `6`、随机种子 `10`、输出 `19`。默认使用经过 README 测试图验证的固定种子 `246813579`，如需每次随机可在本机配置中设为 `-1`。浏览器不能覆盖 ComfyUI 地址、工作流路径或节点 ID，避免公网后端被请求引导访问任意内网服务。
+
+连接检查接口：`GET /comfyui/health`。该接口只检查 ComfyUI API、固定工作流和节点，不上传图片，也不执行生成。
 
 ## 配置 API Key
 
@@ -102,12 +116,12 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
 |---|---|---|
 | person_image | 人像照片（全身/半身站立照），base64 | 必填 |
 | garment_image | 服装图，base64 | 必填 |
-| model | `gemini` / `gpt-image` / `doubao` | `gemini` |
+| model | `gemini` / `gpt-image` / `doubao` / `comfyui` | `gemini` |
 | size | 输出尺寸 `1024x1024`/`1024x1536`/`1536x1024` | `1024x1536` |
 | lang | 提示词语言 `zh`/`en` | `zh` |
 | client_config | 可选的浏览器个人模型配置；仅在当前请求内存中使用，不持久化、不记录 Key/Base URL | 空（使用服务器预设） |
 
-`client_config.provider` 支持 `openai`、`doubao`、`gemini`。个人 Base URL 必须是 HTTP/HTTPS 公网地址，且不能包含账号、查询参数或片段；localhost、内网和保留地址会被拒绝，以降低 SSRF 风险。
+`client_config.provider` 支持 `openai`、`doubao`、`gemini`。个人 Base URL 必须是 HTTP/HTTPS 公网地址，且不能包含账号、查询参数或片段；localhost、内网和保留地址会被拒绝，以降低 SSRF 风险。ComfyUI 不接受 `client_config`，只使用后端本机配置。
 
 响应：
 
@@ -132,6 +146,8 @@ backend/
 │       ├── prompt.go     # 提示词模板（针对模型优化）
 │       ├── generator.go  # 模型适配器接口
 │       ├── gpt_image.go  # GPT-Image 适配器
-│       └── gemini.go     # Gemini 适配器
+│       ├── gemini.go     # Gemini 适配器
+│       └── comfyui.go    # 本机 ComfyUI 固定工作流适配器
+├── workflows/            # 固定 ComfyUI API 工作流
 └── manifest/config/      # 配置文件
 ```
