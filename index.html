@@ -116,6 +116,69 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
   .search{flex:1 1 0}.count{font-size:12px}.tab{padding:0 16px;font-size:16px}.tab em{font-size:13px}.morebtn{min-width:0;width:100%}}
 @media (max-width:560px){.meta .desc{font-size:12px;-webkit-line-clamp:2}.meta .cat{display:block;font-size:12px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* ===== 试穿搭配台 ===== */
+.fitting-toggle{display:inline-flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border:1px solid #4a525f;border-radius:12px;background:rgba(26,30,36,.7);color:#dfe3ea;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s}
+.fitting-toggle:hover{border-color:var(--ac);color:#fff}
+.fitting-toggle svg{opacity:.8}
+.fitting{position:fixed;inset:0;z-index:60;background:var(--bg);display:none;flex-direction:column}
+.fitting.open{display:flex}
+.fit-top{display:flex;align-items:center;gap:12px;padding:10px clamp(16px,3vw,32px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.fit-top .back{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border:1px solid #4a525f;border-radius:10px;background:var(--panel);color:var(--tx);font-size:15px;font-weight:700;cursor:pointer}
+.fit-top .back:hover{border-color:#6a7382}
+.fit-top h2{margin:0;font-size:18px;font-weight:700}
+.fit-top .fit-hint{margin-left:auto;color:var(--tx3);font-size:13px}
+.fit-body{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 320px;min-height:0}
+/* 左：画布 */
+.fit-canvas-wrap{position:relative;display:flex;align-items:center;justify-content:center;padding:20px;min-width:0;overflow:hidden;background:radial-gradient(800px 500px at 30% 0,#1b2433 0,transparent 60%),var(--bg2)}
+.fit-canvas{position:relative;border:1px dashed #3a4250;background:#17191e;box-shadow:var(--sh);touch-action:none}
+.fit-canvas img{position:absolute;left:0;top:0;transform-origin:center;will-change:transform;cursor:move;user-select:none;-webkit-user-drag:none}
+.fit-canvas img.person{position:absolute;left:0;top:0;transform:none;opacity:1;cursor:default;pointer-events:none}
+.fit-canvas img.sel{outline:2px solid var(--ac);outline-offset:1px}
+.fit-canvas img.bg{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;transform:none;pointer-events:none}
+.fit-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--tx3);text-align:center;pointer-events:none}
+.fit-empty b{color:var(--tx2);font-size:16px}
+.fit-empty .ico{width:64px;height:64px;border-radius:18px;border:1px dashed #4a525f;display:flex;align-items:center;justify-content:center;font-size:30px}
+/* 右：控制面板 */
+.fit-side{border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--bg2)}
+.fit-panel{padding:16px;overflow-y:auto}
+.fit-panel section{margin-bottom:18px}
+.fit-panel h3{margin:0 0 10px;font-size:13px;letter-spacing:.06em;color:var(--tx3);text-transform:uppercase}
+.upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px dashed #4a525f;border-radius:12px;padding:22px 16px;cursor:pointer;text-align:center;color:var(--tx2);transition:.15s}
+.upload-zone:hover{border-color:var(--ac);color:var(--tx)}
+.upload-zone .ico{font-size:26px}
+.upload-zone small{font-size:12px;color:var(--tx3)}
+.fit-photo{position:relative;margin-bottom:8px}
+.fit-photo img{width:100%;border-radius:10px;display:block;border:1px solid var(--line)}
+.fit-photo .rm{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;border:0;background:rgba(13,15,18,.75);color:#fff;font-size:16px;cursor:pointer;line-height:1}
+.fit-photo .zoom{font-size:11px;color:var(--tx3);text-align:center;margin-top:6px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1 1 auto;min-height:40px;padding:0 12px;border:1px solid #4a525f;border-radius:9px;background:var(--panel);color:#dfe3ea;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--tx);color:#111;border-color:var(--tx)}
+.garment-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:220px;overflow-y:auto}
+.garment-list .g{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#e9e9e7}
+.garment-list .g img{width:100%;height:100%;object-fit:cover;display:block}
+.garment-list .g.sel{border-color:var(--ac)}
+.garment-list .g .badge{position:absolute;left:0;right:0;bottom:0;padding:2px 4px;font-size:9px;background:rgba(13,15,18,.72);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fit-search{width:100%;min-height:40px;font-size:14px;background:var(--panel);border:1px solid #4a525f;border-radius:9px;padding:0 12px;margin-bottom:10px;outline:none}
+.fit-search:focus{border-color:var(--ac)}
+.layer-list{display:flex;flex-direction:column;gap:6px}
+.layer{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel);cursor:pointer}
+.layer.sel{border-color:var(--ac);background:rgba(143,180,255,.08)}
+.layer .thumb{width:34px;height:44px;border-radius:6px;object-fit:cover;flex:0 0 34px;background:#e9e9e7}
+.layer .nm{flex:1;min-width:0;font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.layer .del{width:30px;height:30px;border-radius:7px;border:0;background:transparent;color:var(--tx3);font-size:16px;cursor:pointer;flex:0 0 30px}
+.layer .del:hover{background:rgba(255,90,90,.15);color:#ff7b7b}
+.fit-actions{display:flex;gap:8px;padding:14px 16px;border-top:1px solid var(--line)}
+.fit-actions button{flex:1;min-height:50px;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer}
+.btn-primary{background:linear-gradient(90deg,var(--ac),#b39dff);border:0;color:#111}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:var(--panel);border:1px solid #4a525f;color:var(--tx)}
+.btn-ghost:hover{border-color:#6a7382}
+@media (max-width:900px){
+  .fit-body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;overflow:auto}
+  .fit-side{border-left:0;border-top:1px solid var(--line)}
+  .fit-canvas-wrap{min-height:50vh}
+}
 </style>
 </head>
 <body>
@@ -123,6 +186,10 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
   <div class="hero-top">
     <div class="eyebrow" data-i18n="eyebrow">COSTUME-DB-01 · 图像参照用服装集</div>
     <div class="hero-controls">
+      <button type="button" class="fitting-toggle" id="fittingToggle" aria-haspopup="dialog">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
+        <span data-i18n="fittingTab">AI 试穿搭配</span>
+      </button>
       <div class="langswitch" id="langswitch" role="group" aria-label="语言切换">
         <button type="button" data-lang="zh" aria-pressed="true">中文</button>
         <button type="button" data-lang="en" aria-pressed="false">English</button>
@@ -190,6 +257,61 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
   </div>
 </div>
 
+<!-- ===== 试穿搭配台 ===== -->
+<div class="fitting" id="fitting" role="dialog" aria-modal="true" aria-label="试穿搭配台">
+  <div class="fit-top">
+    <button type="button" class="back" id="fitBack">‹ <span data-i18n="fitBack">返回图库</span></button>
+    <h2 data-i18n="fitTitle">试穿搭配台</h2>
+    <span class="fit-hint" data-i18n="fitHint">上传人像照片 → 选衣服 → 拖拽/缩放摆放</span>
+  </div>
+  <div class="fit-body">
+    <div class="fit-canvas-wrap">
+      <div class="fit-canvas" id="fitCanvas" style="width:460px;height:690px">
+        <div class="fit-empty" id="fitEmpty">
+          <div class="ico">👤</div>
+          <b data-i18n="fitEmptyTitle">先上传一张人像照片</b>
+          <span data-i18n="fitEmptySub">也可以先在右侧选衣服摆上去</span>
+        </div>
+      </div>
+    </div>
+    <div class="fit-side">
+      <div class="fit-panel">
+        <section>
+          <h3 data-i18n="fitPhotoTitle">你的人像照片</h3>
+          <label class="upload-zone" id="fitUpload" for="fitFile">
+            <span class="ico">📷</span>
+            <span data-i18n="fitUploadBtn">点击上传照片</span>
+            <small data-i18n="fitUploadHint">支持 JPG / PNG</small>
+          </label>
+          <input type="file" id="fitFile" accept="image/*" hidden>
+          <div class="fit-photo" id="fitPhotoWrap" hidden>
+            <img id="fitPhotoPreview" alt="">
+            <button type="button" class="rm" id="fitPhotoRm" aria-label="移除照片">×</button>
+            <div class="zoom" id="fitZoom">100%</div>
+          </div>
+          <div class="seg" id="fitBgSeg" style="margin-top:10px">
+            <button type="button" data-bg="none" aria-pressed="true" data-i18n="fitBgNone">无背景</button>
+            <button type="button" data-bg="white" aria-pressed="false" data-i18n="fitBgWhite">白底</button>
+          </div>
+        </section>
+        <section>
+          <h3 data-i18n="fitGarmentTitle">选择服装</h3>
+          <input class="fit-search" id="fitSearch" type="search" data-i18n-placeholder="fitSearchPh" placeholder="搜索服装…">
+          <div class="garment-list" id="fitGarmentList"></div>
+        </section>
+        <section>
+          <h3 data-i18n="fitLayerTitle">已添加的搭配层</h3>
+          <div class="layer-list" id="fitLayerList"></div>
+        </section>
+      </div>
+      <div class="fit-actions">
+        <button type="button" class="btn-ghost" id="fitClear" data-i18n="fitClear">清空</button>
+        <button type="button" class="btn-primary" id="fitExport" data-i18n="fitExport">导出搭配图</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="data.js"></script>
 <script>
 // ===== 双语字典 =====
@@ -228,6 +350,16 @@ const I18N = {
     // 分类名（中文）
     catSpring: '春', catSummer: '夏', catAutumn: '秋', catWinter: '冬',
     catLingerie: '内衣', catParty: '派对', catSwimwear: '泳装', catSexy: '性感',
+    // 试穿搭配台
+    fittingTab: 'AI 试穿搭配',
+    fitBack: '返回图库', fitTitle: '试穿搭配台',
+    fitHint: '上传人像照片 → 选衣服 → 拖拽/缩放摆放',
+    fitEmptyTitle: '先上传一张人像照片', fitEmptySub: '也可以先在右侧选衣服摆上去',
+    fitPhotoTitle: '你的人像照片', fitUploadBtn: '点击上传照片', fitUploadHint: '支持 JPG / PNG',
+    fitBgNone: '无背景', fitBgWhite: '白底',
+    fitGarmentTitle: '选择服装', fitSearchPh: '搜索服装…',
+    fitLayerTitle: '已添加的搭配层', fitClear: '清空', fitExport: '导出搭配图',
+    fitNoLayer: '还没有添加服装', fitDownloaded: '搭配图已导出',
   },
   en: {
     eyebrow: 'COSTUME-DB-01 · Costume Reference Gallery',
@@ -262,6 +394,16 @@ const I18N = {
     footerNote: 'Costume Gallery COSTUME-DB-01 · AI-generated costume reference images · Free for creative use',
     catSpring: 'Spring', catSummer: 'Summer', catAutumn: 'Autumn', catWinter: 'Winter',
     catLingerie: 'Lingerie', catParty: 'Party', catSwimwear: 'Swimwear', catSexy: 'Sexy',
+    // Fitting studio
+    fittingTab: 'AI Styling',
+    fitBack: 'Back to gallery', fitTitle: 'Styling Studio',
+    fitHint: 'Upload a photo → pick outfits → drag & scale to style',
+    fitEmptyTitle: 'Upload a person photo first', fitEmptySub: 'Or pick outfits on the right to start',
+    fitPhotoTitle: 'Your photo', fitUploadBtn: 'Click to upload', fitUploadHint: 'JPG / PNG supported',
+    fitBgNone: 'No background', fitBgWhite: 'White',
+    fitGarmentTitle: 'Choose outfit', fitSearchPh: 'Search outfits…',
+    fitLayerTitle: 'Added layers', fitClear: 'Clear', fitExport: 'Export look',
+    fitNoLayer: 'No outfits added yet', fitDownloaded: 'Look exported',
   }
 };
 
@@ -470,6 +612,272 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   addEventListener('resize',()=>close(false));
 })();
 
+// ===== 试穿搭配台 =====
+(function(){
+  const fitEl = document.getElementById('fitting');
+  const canvas = document.getElementById('fitCanvas');
+  const emptyEl = document.getElementById('fitEmpty');
+  const garmentList = document.getElementById('fitGarmentList');
+  const layerList = document.getElementById('fitLayerList');
+  const fitSearch = document.getElementById('fitSearch');
+
+  // 状态
+  let personImg = null;      // <img> 元素（人像）
+  let layers = [];           // 衣服图层 {id, img, x, y, scale, rot}
+  let selected = null;       // 当前选中图层 id
+  let fitSearchQ = '';
+  let _uid = 0;
+
+  const CW = () => canvas.clientWidth;
+  const CH = () => canvas.clientHeight;
+
+  // 打开/关闭
+  const open = () => { fitEl.classList.add('open'); document.body.style.overflow='hidden'; refreshGarments(); };
+  const close = () => { fitEl.classList.remove('open'); document.body.style.overflow=''; };
+  document.getElementById('fittingToggle').addEventListener('click', open);
+  document.getElementById('fitBack').addEventListener('click', close);
+  document.addEventListener('keydown', e=>{
+    if(!fitEl.classList.contains('open')) return;
+    if(e.key==='Escape') close();
+    if(e.key==='Delete' || e.key==='Backspace'){ if(selected!=null && document.activeElement===document.body) removeLayer(selected); }
+  });
+
+  // ===== 人像上传 =====
+  const photoWrap = document.getElementById('fitPhotoWrap');
+  const photoPreview = document.getElementById('fitPhotoPreview');
+  const zoomEl = document.getElementById('fitZoom');
+  let photoScale = 1;
+
+  document.getElementById('fitFile').addEventListener('change', e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      // 移除旧人像
+      if (personImg) personImg.remove();
+      personImg = document.createElement('img');
+      personImg.className = 'person';
+      personImg.src = url;
+      canvas.appendChild(personImg);
+      fitPerson();  // 按画布尺寸适配
+      photoWrap.hidden = false;
+      photoPreview.src = url;
+      photoScale = 1; updateZoom();
+      emptyEl.style.display='none';
+      e.target.value='';
+    };
+    img.src = url;
+  });
+
+  // 人像适配画布（cover 填满）
+  function fitPerson(){
+    if(!personImg) return;
+    const cw=CW(), ch=CH();
+    const iw=personImg.naturalWidth, ih=personImg.naturalHeight;
+    const s=Math.max(cw/iw, ch/ih);
+    const w=iw*s, h=ih*s;
+    personImg.style.width=w+'px';
+    personImg.style.height=h+'px';
+    personImg.style.left=((cw-w)/2)+'px';
+    personImg.style.top=((ch-h)/2)+'px';
+    personImg.style.opacity=photoScale;
+  }
+  function updateZoom(){
+    zoomEl.textContent = Math.round(photoScale*100)+'%';
+    if(personImg) personImg.style.opacity = photoScale;
+  }
+  document.getElementById('fitPhotoRm').addEventListener('click', ()=>{
+    if(personImg){ personImg.remove(); personImg=null; }
+    photoWrap.hidden=true;
+    emptyEl.style.display='flex';
+  });
+
+  // 背景切换
+  document.getElementById('fitBgSeg').addEventListener('click', e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('#fitBgSeg button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    canvas.style.background = b.dataset.bg==='white' ? '#ffffff' : '#17191e';
+  });
+
+  // ===== 服装选择 =====
+  function refreshGarments(){
+    const list = D.filter(d=>{
+      if(!fitSearchQ) return true;
+      const idx=new Set([d.id.toLowerCase()]);
+      idx.add(d.カテゴリ);
+      d.キーワード.split(' ').forEach(w=>{ idx.add(w); const z=EN2ZH[w]; if(z)idx.add(z); });
+      const words=fitSearchQ.toLowerCase().split(/\s+/).filter(Boolean);
+      return words.every(w=>{ const a=ZH_ALIAS[w]||(ZH2EN[w]?ZH2EN[w][0]:null); for(const s of idx){ if(s.toLowerCase().startsWith(w))return true; if(a&&s.toLowerCase().startsWith(a))return true;} return false; });
+    }).slice(0, 60);
+    garmentList.innerHTML = list.map(d=>`<div class="g" data-id="${esc(d.id)}" title="${esc(d.id)}"><img loading="lazy" src="assets/${esc(d.サムネ)}" alt="${esc(d.id)}"><span class="badge">${esc(d.id)}</span></div>`).join('')
+      || `<div style="grid-column:1/-1;color:var(--tx3);font-size:12px;text-align:center;padding:12px 0">${t('noResultTitle')}</div>`;
+  }
+  fitSearch.addEventListener('input', e=>{ fitSearchQ=e.target.value.trim(); refreshGarments(); });
+
+  garmentList.addEventListener('click', e=>{
+    const g=e.target.closest('.g'); if(!g) return;
+    const d = D.find(x=>x.id===g.dataset.id); if(!d) return;
+    addLayer(d);
+  });
+
+  // ===== 图层管理 =====
+  function addLayer(d){
+    const img = document.createElement('img');
+    img.src = 'assets/'+d.画像;
+    img.draggable = false;
+    const layer = { id:'L'+(++_uid), d, img, x:40, y:40, scale:0.6, rot:0 };
+    layers.push(layer);
+    canvas.appendChild(img);
+    positionLayer(layer);
+    selectLayer(layer.id);
+    emptyEl.style.display='none';
+    refreshLayers();
+  }
+
+  function positionLayer(l){
+    const img=l.img;
+    const w=img.naturalWidth*l.scale, h=img.naturalHeight*l.scale;
+    img.style.width=w+'px'; img.style.height=h+'px';
+    img.style.left=l.x+'px'; img.style.top=l.y+'px';
+    img.style.transform=`rotate(${l.rot}deg)`;
+  }
+
+  function selectLayer(id){
+    selected=id;
+    layers.forEach(l=>l.img.classList.toggle('sel', l.id===id));
+    refreshLayers();
+  }
+  function removeLayer(id){
+    const i=layers.findIndex(l=>l.id===id); if(i<0)return;
+    layers[i].img.remove(); layers.splice(i,1);
+    if(selected===id) selected=layers.length?layers[layers.length-1].id:null;
+    if(!layers.length && !personImg) emptyEl.style.display='flex';
+    refreshLayers();
+  }
+
+  function refreshLayers(){
+    if(!layers.length){
+      layerList.innerHTML=`<div style="color:var(--tx3);font-size:12px">${t('fitNoLayer')}</div>`;
+      return;
+    }
+    layerList.innerHTML = layers.map(l=>`
+      <div class="layer ${l.id===selected?'sel':''}" data-id="${l.id}">
+        <img class="thumb" src="assets/${esc(l.d.サムネ)}" alt="">
+        <span class="nm">${esc(l.d.id)}</span>
+        <button type="button" class="del" data-del="${l.id}" aria-label="删除">×</button>
+      </div>`).join('');
+  }
+  layerList.addEventListener('click', e=>{
+    const del=e.target.closest('.del');
+    if(del){ e.stopPropagation(); removeLayer(del.dataset.del); return; }
+    const l=e.target.closest('.layer'); if(l) selectLayer(l.dataset.id);
+  });
+
+  // ===== 拖拽 / 缩放 / 旋转 =====
+  let drag=null;
+  canvas.addEventListener('pointerdown', e=>{
+    const img=e.target.closest('img');
+    if(!img || img.classList.contains('person') || img.classList.contains('bg')) return;
+    const layer=layers.find(l=>l.img===img); if(!layer) return;
+    selectLayer(layer.id);
+    const rect=canvas.getBoundingClientRect();
+    drag={ layer, startX:e.clientX, startY:e.clientY, ox:layer.x, oy:layer.y, mode:'move' };
+    canvas.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  canvas.addEventListener('pointermove', e=>{
+    if(!drag) return;
+    const dx=e.clientX-drag.startX, dy=e.clientY-drag.startY;
+    drag.layer.x = drag.ox+dx; drag.layer.y=drag.oy+dy;
+    positionLayer(drag.layer);
+  });
+  canvas.addEventListener('pointerup', e=>{ drag=null; });
+  canvas.addEventListener('pointercancel', ()=>drag=null);
+
+  // 滚轮缩放（悬停的图层）
+  canvas.addEventListener('wheel', e=>{
+    const img=e.target.closest('img');
+    if(!img || img.classList.contains('person') || img.classList.contains('bg')) return;
+    const layer=layers.find(l=>l.img===img); if(!layer) return;
+    e.preventDefault();
+    const f = e.deltaY<0 ? 1.08 : 1/1.08;
+    layer.scale=Math.min(3, Math.max(0.1, layer.scale*f));
+    positionLayer(layer);
+    updateInspector(layer);
+  }, {passive:false});
+
+  // 旋转（拖拽时按住 Shift）
+  canvas.addEventListener('keydown', e=>{
+    if(!selected) return;
+    const layer=layers.find(l=>l.id===selected); if(!layer) return;
+    const step=e.shiftKey?5:1;
+    if(e.key==='ArrowLeft'){ layer.rot-=step; positionLayer(layer); updateInspector(layer); }
+    if(e.key==='ArrowRight'){ layer.rot+=step; positionLayer(layer); updateInspector(layer); }
+    if(e.key==='ArrowUp'){ layer.scale=Math.min(3,layer.scale*1.02); positionLayer(layer); updateInspector(layer); }
+    if(e.key==='ArrowDown'){ layer.scale=Math.max(0.1,layer.scale/1.02); positionLayer(layer); updateInspector(layer); }
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault();
+  });
+
+  // 双击旋转 90°
+  canvas.addEventListener('dblclick', e=>{
+    const img=e.target.closest('img');
+    if(!img || img.classList.contains('person') || img.classList.contains('bg')) return;
+    const layer=layers.find(l=>l.img===img); if(!layer) return;
+    layer.rot=(layer.rot+90)%360; positionLayer(layer); updateInspector(layer);
+  });
+
+  // 简单信息提示（缩放/旋转值显示在标题栏 hint）
+  function updateInspector(layer){
+    const hint=document.querySelector('.fit-hint');
+    if(hint && layer) hint.textContent = `${Math.round(layer.scale*100)}% · ${Math.round(layer.rot)}°`;
+  }
+
+  // ===== 清空 / 导出 =====
+  document.getElementById('fitClear').addEventListener('click', ()=>{
+    layers.forEach(l=>l.img.remove()); layers=[]; selected=null;
+    if(!personImg) emptyEl.style.display='flex';
+    refreshLayers();
+  });
+
+  document.getElementById('fitExport').addEventListener('click', ()=>{
+    const cw=CW(), ch=CH();
+    const off=document.createElement('canvas');
+    off.width=cw; off.height=ch;
+    const ctx=off.getContext('2d');
+    // 背景
+    const bg=canvas.style.background;
+    ctx.fillStyle = bg && bg!=='#17191e' ? bg : '#17191e';
+    ctx.fillRect(0,0,cw,ch);
+    // 人像
+    if(personImg){
+      const iw=personImg.naturalWidth, ih=personImg.naturalHeight;
+      const s=Math.max(cw/iw, ch/ih);
+      const w=iw*s, h=ih*s;
+      ctx.globalAlpha=photoScale;
+      ctx.drawImage(personImg, (cw-w)/2, (ch-h)/2, w, h);
+      ctx.globalAlpha=1;
+    }
+    // 衣服层
+    layers.forEach(l=>{
+      ctx.save();
+      ctx.translate(l.x + l.img.naturalWidth*l.scale/2, l.y + l.img.naturalHeight*l.scale/2);
+      ctx.rotate(l.rot*Math.PI/180);
+      ctx.drawImage(l.img, -l.img.naturalWidth*l.scale/2, -l.img.naturalHeight*l.scale/2, l.img.naturalWidth*l.scale, l.img.naturalHeight*l.scale);
+      ctx.restore();
+    });
+    const a=document.createElement('a');
+    a.href=off.toDataURL('image/png');
+    a.download='搭配图-'+Date.now()+'.png';
+    a.click();
+    document.querySelector('.fit-hint').textContent = t('fitDownloaded');
+  });
+
+  // 语言切换时刷新服装列表
+  const _origApplyLang = applyLang;
+  applyLang = function(){ _origApplyLang(); if(fitEl.classList.contains('open')) refreshGarments(); };
+})();
+
 // ===== 初始化 =====
 // 支持 URL 参数指定初始语言（?lang=en）和初始搜索词（?q=白），默认中文
 const qs = new URLSearchParams(location.search);
@@ -478,6 +886,8 @@ if (qsLang==='en' || qsLang==='zh') LANG = qsLang;
 const qsQ = qs.get('q');
 if (qsQ) { S.q = qsQ.trim().toLowerCase(); const qi=$('#q'); qi.value=qsQ.trim(); }
 applyLang();
+// 支持 #fitting 直接打开试穿搭配台（便于分享/测试）
+if (location.hash === '#fitting') document.getElementById('fittingToggle').click();
 </script>
 </body>
 </html>
