@@ -107,6 +107,9 @@ main{max-width:1600px;margin:0 auto;padding:22px clamp(16px,4vw,48px) 60px}
 .dl-try{background:linear-gradient(90deg,var(--ac),#b39dff);border:0;color:#111;cursor:pointer}
 .dl-try:hover{background:linear-gradient(90deg,var(--ac),#b39dff);filter:brightness(1.08);color:#111}
 .dl-try:active{transform:translateY(0)}
+.dl-buy{background:linear-gradient(90deg,#ff5277,#ff7a45);border:0;color:#fff}
+.dl-buy:hover{background:linear-gradient(90deg,#ff5277,#ff7a45);filter:brightness(1.1);color:#fff}
+.dl-buy:active{transform:translateY(0)}
 @media (prefers-reduced-motion:reduce){.dl{transition:none}.dl:hover{transform:none}}
 .keys{font-size:11px;color:var(--tx3);margin-top:auto}
 .keys kbd{border:1px solid var(--line2);border-radius:4px;padding:0 5px;font-family:inherit}
@@ -173,6 +176,9 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
 .ai-picked.has b{color:var(--ac);font-weight:700}
 .ai-picked .gid{font-family:ui-monospace,monospace;font-size:11px}
 .ai-picked img{width:22px;height:33px;border-radius:4px;object-fit:cover}
+.ai-picked .btn-buy-tag{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:99px;background:linear-gradient(90deg,#ff5277,#ff7a45);color:#fff;font-size:12px;font-weight:700;text-decoration:none;box-shadow:0 2px 8px rgba(255,82,119,.35);transition:transform .15s ease,filter .15s ease;white-space:nowrap}
+.ai-picked .btn-buy-tag:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.ai-picked .btn-buy-tag:active{transform:translateY(0)}
 .ai-gen-btn{width:100%;min-height:52px;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(90deg,#ff7ab6,#ff9d6c);border:0;color:#111}
 .ai-gen-btn:hover{filter:brightness(1.08)}
 .ai-gen-btn:disabled{opacity:.55;cursor:not-allowed;filter:none}
@@ -180,13 +186,16 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
 .ai-result .ai-result-box{position:relative;border-radius:12px;overflow:hidden;background:#17191e;border:1px solid var(--line);min-height:120px;display:flex;align-items:center;justify-content:center}
 .ai-result .ai-result-box img{max-width:100%;max-height:420px;display:block}
 .ai-result .ai-empty{color:var(--tx3);font-size:12px;text-align:center;padding:28px 12px}
-.ai-result .ai-result-bar{display:flex;gap:8px;margin-top:8px}
-.ai-result .ai-result-bar button{flex:1;min-height:40px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.ai-result .ai-result-bar{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.ai-result .ai-result-bar button,.ai-result .ai-result-bar a{flex:1 1 calc(33.3% - 8px);min-width:105px;min-height:40px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box}
 .btn-primary{background:linear-gradient(90deg,var(--ac),#b39dff);border:0;color:#111}
 .btn-primary:hover{filter:brightness(1.08)}
 .btn-ghost{background:var(--panel);border:1px solid #4a525f;color:var(--tx)}
 .btn-ghost:hover{border-color:#6a7382}
 .btn-ghost:disabled,.btn-primary:disabled{opacity:.55;cursor:not-allowed;filter:none}
+.btn-buy{background:linear-gradient(90deg,#ff5277,#ff7a45);border:0;color:#fff;box-shadow:0 3px 10px rgba(255,82,119,.3);transition:filter .18s,transform .15s}
+.btn-buy:hover{filter:brightness(1.1);transform:translateY(-1px);color:#fff}
+.btn-buy:active{transform:translateY(0)}
 .ai-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(17,17,17,.35);border-top-color:#111;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (max-width:560px){
@@ -270,6 +279,7 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
       </div>
       <a class="dl" id="mdl" href="#" download data-i18n="download">下载原尺寸（PNG）</a>
       <button type="button" class="dl dl-try" id="mtryon" data-i18n="aiTryThis">AI 试穿这套</button>
+      <a class="dl dl-buy" id="mbuy" href="#" target="_blank" rel="noopener noreferrer" data-i18n="buySame">🛍️ 购买同款</a>
       <div class="keys"><kbd>←</kbd><kbd>→</kbd> <span data-i18n="prevNext">前后服装</span>　<kbd>Esc</kbd> <span data-i18n="close">关闭</span></div>
     </div>
   </div>
@@ -329,6 +339,7 @@ footer{color:var(--tx3);font-size:12px;text-align:center;padding:8px 16px 44px;l
           <div class="ai-result-bar" id="aiResultBar" style="display:none">
             <button type="button" class="btn-ghost" id="aiRegenerate" data-i18n="aiRegenerate">重新生成</button>
             <button type="button" class="btn-primary" id="aiDownload" data-i18n="aiDownload">下载结果图</button>
+            <a class="btn-buy" id="aiBuyResult" href="#" target="_blank" rel="noopener noreferrer" data-i18n="buySame">🛍️ 购买同款</a>
           </div>
         </div>
       </section>
@@ -398,6 +409,7 @@ const I18N = {
     aiResult: '换装完成', aiDownload: '下载结果图', aiRegenerate: '重新生成',
     aiResultNone: '生成结果会显示在这里',
     aiTryThis: 'AI 试穿这套', aiTryCard: 'AI 试穿',
+    buySame: '购买同款',
   },
   en: {
     eyebrow: 'COSTUME-DB-01 · Costume Reference Gallery',
@@ -456,6 +468,7 @@ const I18N = {
     aiResult: 'Done', aiDownload: 'Download result', aiRegenerate: 'Regenerate',
     aiResultNone: 'The result will appear here',
     aiTryThis: 'AI try-on this look', aiTryCard: 'AI try-on',
+    buySame: 'Buy This Look',
   }
 };
 
@@ -640,6 +653,7 @@ function showM(){
   $('#mcat').textContent=catName(d.カテゴリ);
   $('#mdesc').textContent=d.キーワード.split(' ').map(wordName).join(' · ');
   const dl=$('#mdl');dl.href=d.原寸;dl.setAttribute('download',d.id+'.png');
+  const mbuy=$('#mbuy');if(mbuy)mbuy.href='https://paipiange.com/nvzhuang.html?code='+encodeURIComponent(d.id);
 }
 function step(n){const j=MI+n;if(j<0||j>=VIEW.length)return;MI=j;if(j>=S.n)addMore();showM()}
 $('#mprev').onclick=()=>step(-1);$('#mnext').onclick=()=>step(1);$('#mclose').onclick=closeM;
@@ -749,14 +763,19 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   function refreshPicked(){
     const el = document.getElementById('aiPicked');
     if(!el) return;
+    const aiBuyResult = document.getElementById('aiBuyResult');
     if(!pickedGarment){
       el.className = 'ai-picked';
       el.innerHTML = t('aiPickedNone');
+      if(aiBuyResult) aiBuyResult.href = '#';
       return;
     }
+    const buyUrl = `https://paipiange.com/nvzhuang.html?code=${encodeURIComponent(pickedGarment.id)}`;
     el.className = 'ai-picked has';
     el.innerHTML = `<img src="assets/${esc(pickedGarment.サムネ)}" alt="">` +
-      `<span>${t('aiPicked')}</span><b class="gid">${esc(pickedGarment.id)}</b>`;
+      `<span>${t('aiPicked')}</span><b class="gid">${esc(pickedGarment.id)}</b>` +
+      `<a class="btn-buy-tag" href="${buyUrl}" target="_blank" rel="noopener noreferrer" title="前往购买同款 ${esc(pickedGarment.id)}">🛍️ <span>${t('buySame')}</span></a>`;
+    if(aiBuyResult) aiBuyResult.href = buyUrl;
   }
 
   // 语言切换时刷新服装列表
