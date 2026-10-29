@@ -2,7 +2,8 @@
 
 一个深色主题的服装参考图集网站，收录 **1407 张** 人物不入镜的 AI 生成服装图像（2:3 比例），支持中英文双语浏览与检索。
 
-> 🔗 **在线预览**：https://paipiange.github.io/nvzhuang/
+> 🔗 **在线预览**：https://paipiange.github.io/nvzhuang/  
+> 💡 **原作者推文 / 灵感来源**：X [@giaaibusi](https://x.com/giaaibusi)
 
 ## 📸 预览
 
@@ -177,6 +178,12 @@ nvzhuang/
 ?q=lace           # 初始搜索词
 ?lang=en&q=white  # 组合使用
 ```
+
+## 💡 灵感来源与原作者鸣谢
+
+本项目图像数据整理与创意灵感源自 X（Twitter）推文：
+- **原作者 / 灵感来源**：[X @giaaibusi](https://x.com/giaaibusi)
+- 特别感谢原作者对高质量 AI 服装图集的整理与创意分享！
 
 ## 📄 使用许可
 

@@ -1,6 +1,6 @@
 # AI 换装后端服务
 
-基于 GoFrame v2 的 AI 换装（虚拟试衣）后端，为「衣装集」网站提供 `POST /tryon` 接口。
+基于 GoFrame v2 的 AI 换装（虚拟试衣）后端，为「衣装集」网站提供 `POST /tryon` 接口。灵感源自 X 推文作者 [@giaaibusi](https://x.com/giaaibusi)。
 
 ## 效果演示
 
