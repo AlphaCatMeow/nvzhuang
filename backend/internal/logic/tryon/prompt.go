@@ -1,19 +1,54 @@
 // Package tryon 换装提示词模板，针对不同模型优化
 package tryon
 
-// BuildGPT 构建 GPT-Image 的提示词（英文，GPT 对英文指令理解最佳）
+// BuildGPTSafety 构建 GPT-Image 专用的防封控安全提示词
+func BuildGPTSafety(lang string) string {
+	if lang == "zh" {
+		return gptSafetyZhPrompt
+	}
+	return gptSafetyEnPrompt
+}
+
+// BuildGPT 构建 GPT-Image 的提示词（默认指向安全防封控模板）
 func BuildGPT(lang string) string {
+	return BuildGPTSafety(lang)
+}
+
+// BuildGemini 构建 Gemini（Nano Banana 2）图像模型的提示词（保留原提示词）
+func BuildGemini(lang string) string {
+	// Gemini 对中英文都支持良好，但换装任务英文指令更稳定
+	return enPrompt
+}
+
+// BuildDefault 通用/其他模型（如豆包等）提示词（保留原提示词）
+func BuildDefault(lang string) string {
 	if lang == "zh" {
 		return zhPrompt
 	}
 	return enPrompt
 }
 
-// BuildGemini 构建 Gemini（Nano Banana 2）图像模型的提示词
-func BuildGemini(lang string) string {
-	// Gemini 对中英文都支持良好，但换装任务英文指令更稳定
-	return enPrompt
-}
+// gptSafetyEnPrompt GPT-Image-2 专用英文防封控安全提示词
+const gptSafetyEnPrompt = `Task: Professional commercial fashion virtual try-on photograph.
+
+Strict Requirements:
+1. Model Identity: Maintain the adult female model from Image 1 - faithfully preserve her facial features, ethnic identity, eye shape, smile, skin tone, and hairstyle. Keep her identity consistent.
+2. Wardrobe: Dress her in the exact clothing and accessories shown in Image 2. Faithfully reproduce the colors, fabric textures, patterns, and silhouette.
+3. Safety & Fit: Professional high-end commercial lookbook standard. Fully clothed, modest neckline, standard tailored fit, upright standing posture, non-revealing.
+4. Composition: Clean bright studio lighting, neutral minimal background, photorealistic 8k, high detail fashion editorial photograph.
+
+Output: ONLY the final dressed-up photograph.`
+
+// gptSafetyZhPrompt GPT-Image-2 专用中文防封控安全提示词
+const gptSafetyZhPrompt = `任务：专业商业时尚虚拟试衣摄影。
+
+严格要求：
+1. 模特身份：保持第一张图片中的成年女性模特身份——忠实保留其面部特征、种族相貌、眼部轮廓、肤色与发型，保持人物相貌风格一致。
+2. 服装穿搭：让人物完整穿上第二张图片中展示的服装与配饰，忠实还原服装的色彩、面料质感、图案与款式剪裁。
+3. 安全与合规：采用高端商业型录摄影标准。穿着完整端庄，标准合身剪裁，端正站姿，避免过度露肤与暴露。
+4. 画面效果：纯净明亮的商业影棚光照，简洁中性背景，逼真细节与质感，专业时尚画册品质。
+
+输出：仅输出最终的完整着装照片。`
 
 // enPrompt 英文提示词（主用，效果最稳定）
 const enPrompt = `You are a professional fashion virtual try-on assistant.

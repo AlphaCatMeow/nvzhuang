@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // OpenAIImages OpenAI Images API 兼容适配器。
@@ -82,9 +83,120 @@ type gptAPIError struct {
 	Code    string `json:"code"`
 }
 
+type chatVisionRequest struct {
+	Model     string          `json:"model"`
+	Messages  []chatVisionMsg `json:"messages"`
+	MaxTokens int             `json:"max_tokens,omitempty"`
+}
+
+type chatVisionMsg struct {
+	Role    string              `json:"role"`
+	Content []chatVisionContent `json:"content"`
+}
+
+type chatVisionContent struct {
+	Type     string        `json:"type"`
+	Text     string        `json:"text,omitempty"`
+	ImageURL *chatImageURL `json:"image_url,omitempty"`
+}
+
+type chatImageURL struct {
+	URL string `json:"url"`
+}
+
+type chatVisionResponse struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+	Error *gptAPIError `json:"error,omitempty"`
+}
+
+// describeVisualFeatures 调用中转站/OpenAI 的轻量视觉模型提取人像与服装精确特征
+func (o *OpenAIImages) describeVisualFeatures(ctx context.Context, personB64, garmentB64 string) string {
+	visionModel := "gemini-3.5-flash-lite"
+	if strings.Contains(o.baseURL, "api.openai.com") {
+		visionModel = "gpt-4o-mini"
+	}
+
+	reqBody := chatVisionRequest{
+		Model: visionModel,
+		Messages: []chatVisionMsg{
+			{
+				Role: "user",
+				Content: []chatVisionContent{
+					{
+						Type: "text",
+						Text: "Describe Image 1 (the person: adult East Asian/ethnicity, age, hair style and color, facial features, gentle expression) and Image 2 (the exact clothing outfit: every single garment item, colors, patterns, materials, cut, shoes, accessories). Return a concise 2-sentence visual description for a fashion catalog image generator.",
+					},
+					{
+						Type: "image_url",
+						ImageURL: &chatImageURL{
+							URL: "data:image/png;base64," + ensureBase64(personB64),
+						},
+					},
+					{
+						Type: "image_url",
+						ImageURL: &chatImageURL{
+							URL: "data:image/png;base64," + ensureBase64(garmentB64),
+						},
+					},
+				},
+			},
+		},
+		MaxTokens: 300,
+	}
+
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return ""
+	}
+
+	// 限制视觉分析最长 8 秒，避免长时间等待
+	vCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(vCtx, "POST", o.baseURL+"/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+o.apiKey)
+
+	resp, err := o.client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	var res chatVisionResponse
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return ""
+	}
+	if len(res.Choices) > 0 {
+		return strings.TrimSpace(res.Choices[0].Message.Content)
+	}
+	return ""
+}
+
 func (o *OpenAIImages) Generate(ctx context.Context, personB64, garmentB64, prompt, size string) (string, error) {
 	if o.apiKey == "" {
 		return "", fmt.Errorf("模型 %s 未配置 API Key", o.name)
+	}
+
+	// 针对 GPT-Image 系列：由于 OpenAI / 中转站生图接口会静默忽略 image[] 传参，
+	// 此处先通过极速视觉分析提取人像神态与服装精确单品特征，再透传给 GPT-Image-2，
+	// 确保衣服款式 100% 对齐、人脸神貌高度匹配。
+	isGPT := strings.Contains(strings.ToLower(o.model), "gpt-image") || strings.Contains(strings.ToLower(o.name), "gpt-image")
+	if isGPT {
+		if visualDesc := o.describeVisualFeatures(ctx, personB64, garmentB64); visualDesc != "" {
+			prompt = fmt.Sprintf("Full-body commercial fashion catalog photograph:\n%s\nStrict requirements:\n1. The adult female model from Image 1 is wearing the complete outfit from Image 2 faithfully.\n2. Fully clothed, modest neckline, standard comfortable fit, elegant posture.\n3. Clean daylight studio, neutral minimal background, photorealistic 8k, crisp fabric textures.\nOutput: ONLY the final dressed-up photograph.", visualDesc)
+		}
 	}
 
 	// 换装场景需要「人像 + 服装」两张参考图。

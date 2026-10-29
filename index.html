@@ -169,12 +169,18 @@ footer a:hover{color:#fff;text-decoration:underline}
 .fit-photo .rm{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;border:0;background:rgba(13,15,18,.75);color:#fff;font-size:16px;cursor:pointer;line-height:1}
 /* 服装网格 */
 .garment-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;max-height:340px;overflow-y:auto}
-.garment-list .g{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#e9e9e7}
+.garment-list .g{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#e9e9e7;transition:opacity .18s,filter .18s,border-color .18s,box-shadow .18s,transform .18s}
 .garment-list .g img{width:100%;height:100%;object-fit:cover;display:block}
-.garment-list .g.sel{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac),0 0 12px rgba(143,180,255,.5)}
+.garment-list.has-selection .g:not(.sel){opacity:.3;filter:grayscale(.8) brightness(.72)}
+.garment-list.has-selection .g:not(.sel):hover{opacity:.72;filter:grayscale(.25) brightness(.9)}
+.garment-list .g.sel{opacity:1;filter:none;border-color:var(--ac);box-shadow:0 0 0 2px var(--ac),0 0 16px rgba(143,180,255,.58);transform:scale(.96)}
 .garment-list .g .badge{position:absolute;left:0;right:0;bottom:0;padding:2px 4px;font-size:9px;background:rgba(13,15,18,.72);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fit-search{width:100%;min-height:40px;font-size:14px;background:var(--panel);border:1px solid #4a525f;border-radius:9px;padding:0 12px;margin-bottom:10px;outline:none;color:var(--tx)}
+.fit-search-row{display:flex;gap:8px;margin-bottom:10px}
+.fit-search{flex:1;min-width:0;min-height:42px;font-size:14px;background:var(--panel);border:1px solid #4a525f;border-radius:9px;padding:0 12px;outline:none;color:var(--tx)}
 .fit-search:focus{border-color:var(--ac)}
+.fit-random{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 15px;border:1px solid rgba(143,180,255,.5);border-radius:9px;background:rgba(143,180,255,.1);color:var(--ac2);font-size:13px;font-weight:700;cursor:pointer}
+.fit-random:hover{background:rgba(143,180,255,.2);border-color:var(--ac)}
+.fit-random:disabled{opacity:.45;cursor:not-allowed}
 /* AI 换装 */
 .ai-model-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .ai-model-row .lbl{font-size:13px;color:var(--tx2)}
@@ -188,11 +194,13 @@ footer a:hover{color:#fff;text-decoration:underline}
 .ai-config-btn{flex:0 0 auto;min-height:40px;padding:0 14px;border:1px solid rgba(143,180,255,.45);border-radius:9px;background:rgba(143,180,255,.1);color:var(--ac2);font-size:13px;font-weight:700;cursor:pointer}
 .ai-config-btn:hover{background:rgba(143,180,255,.18)}
 .fit-tip-box{margin:6px 0 12px;padding:8px 12px;border-radius:8px;font-size:12px;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:var(--tx3)}
-.ai-picked{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border:1px dashed #4a525f;border-radius:9px;font-size:12px;color:var(--tx3);background:rgba(26,30,36,.5);min-height:22px}
+.ai-picked{display:flex;align-items:center;gap:12px;margin:0 0 12px;padding:10px 12px;border:1px dashed #4a525f;border-radius:11px;font-size:12px;color:var(--tx3);background:rgba(26,30,36,.5);min-height:44px}
 .ai-picked.has{color:var(--tx);border-style:solid;border-color:var(--ac);background:rgba(143,180,255,.08)}
 .ai-picked.has b{color:var(--ac);font-weight:700}
-.ai-picked .gid{font-family:ui-monospace,monospace;font-size:11px}
-.ai-picked img{width:22px;height:33px;border-radius:4px;object-fit:cover}
+.ai-picked .ai-picked-copy{display:grid;gap:5px;min-width:0}
+.ai-picked .ai-picked-copy span{color:var(--tx3)}
+.ai-picked .gid{font-family:ui-monospace,monospace;font-size:13px}
+.ai-picked img{flex:0 0 68px;width:68px;height:102px;border-radius:8px;object-fit:cover;background:#e9e9e7;box-shadow:0 4px 14px rgba(0,0,0,.28)}
 .ai-picked .btn-buy-tag{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:99px;background:linear-gradient(90deg,#ff5277,#ff7a45);color:#fff;font-size:12px;font-weight:700;text-decoration:none;box-shadow:0 2px 8px rgba(255,82,119,.35);transition:transform .15s ease,filter .15s ease;white-space:nowrap}
 .ai-picked .btn-buy-tag:hover{filter:brightness(1.12);transform:translateY(-1px)}
 .ai-picked .btn-buy-tag:active{transform:translateY(0)}
@@ -417,7 +425,10 @@ footer a:hover{color:#fff;text-decoration:underline}
       <!-- 步骤 2：选择服装 -->
       <section class="step" data-step="2">
         <div class="step-head"><span class="step-num">2</span><h3 data-i18n="fitGarmentTitle">选择一件服装</h3></div>
-        <input class="fit-search" id="fitSearch" type="search" data-i18n-placeholder="fitSearchPh" placeholder="搜索服装…">
+        <div class="fit-search-row">
+          <input class="fit-search" id="fitSearch" type="search" data-i18n-placeholder="fitSearchPh" placeholder="搜索服装…">
+          <button type="button" class="fit-random" id="fitRandom"><span aria-hidden="true">🎲</span><span data-i18n="fitRandom">随机</span></button>
+        </div>
         <div class="garment-list" id="fitGarmentList"></div>
       </section>
 
@@ -432,6 +443,7 @@ footer a:hover{color:#fff;text-decoration:underline}
             <option value="doubao" data-i18n="aiModelDoubao">豆包 Seedream（国内）</option>
           </select>
         </div>
+        <div class="fit-tip-box ai-gpt-notice" id="aiGptNotice" style="display:none;background:rgba(234,179,8,.08);border-color:rgba(234,179,8,.25);color:var(--tx2);" data-i18n="gptModelNotice">💡 提示：GPT Image 2 已启用防封控安全提示词；生成时将以端庄商用型录风格合成服装，人物面部将保持神貌相似。</div>
         <div class="ai-config-strip">
           <div class="ai-config-copy">
             <span data-i18n="settingsCurrent">当前调用配置</span>
@@ -577,6 +589,7 @@ const I18N = {
     notice8: '请勿用于表现真实人物或未成年人的用途，以及违背公序良俗的用途。',
     searchPh: '按 ID・关键词搜索　例：denim、白',
     all: '全部',
+    random: '随机',
     showing: '显示 {n} 件',
     loadingMore: '加载更多',
     moreLeft: '加载更多（剩余 {n} 件）',
@@ -601,7 +614,7 @@ const I18N = {
     fitEmptyTitle: '先上传一张人像照片', fitEmptySub: '也可以先在右侧选衣服摆上去',
     fitPhotoTitle: '上传你的照片', fitUploadBtn: '点击上传照片', fitUploadHint: '支持 JPG / PNG',
     fitBgNone: '无背景', fitBgWhite: '白底',
-    fitGarmentTitle: '选择一件服装', fitSearchPh: '搜索服装…',
+    fitGarmentTitle: '选择一件服装', fitSearchPh: '搜索服装…', fitRandom: '随机',
     fitLayerTitle: '已添加的搭配层', fitClear: '清空', fitExport: '导出搭配图',
     fitNoLayer: '还没有添加服装', fitDownloaded: '搭配图已导出',
     fitPreview: '预览', fitPreviewClose: '返回编辑', fitPreviewEmpty: '还没有可预览的内容，请先上传照片或添加服装',
@@ -610,6 +623,9 @@ const I18N = {
     // AI 换装
     aiTitle: '生成效果', aiDesc: '用大模型把衣服真实穿到人像上',
     aiModel: '换装模型', aiModelGPT: 'GPT Image 2', aiModelDoubao: '豆包 Seedream（国内）', aiModelGemini: 'Nano Banana 2（默认）',
+    gptModelNotice: '💡 提示：GPT Image 2 已启用防封控安全提示词；生成时将以端庄商用型录风格合成服装，人物面部将保持神貌相似。',
+    aiGeneratingGPT: '正在使用 GPT Image 2 安全模式换装生成中…',
+    aiSuccessGPT: '换装完成（已使用 GPT Image 2 防封控安全模式生成并保存）',
     aiPickedNone: '未选服装 — 请在下方「选择一件服装」点选一件', aiPicked: '已选服装：',
     aiGenerate: '开始 AI 换装', aiGenerating: '生成中…', aiNeedPhoto: '请先上传你的照片',
     aiNeedGarment: '请先在「选择一件服装」里点选一件衣服', aiNeedBoth: '请先上传照片并选择服装',
@@ -662,6 +678,7 @@ const I18N = {
     notice8: 'Do not use for depicting real people or minors, or for purposes contrary to public order and morals.',
     searchPh: 'Search by ID or keyword  e.g. denim, white',
     all: 'All',
+    random: 'Random',
     showing: '{n} items',
     loadingMore: 'Load more',
     moreLeft: 'Load more ({n} remaining)',
@@ -685,7 +702,7 @@ const I18N = {
     fitEmptyTitle: 'Upload a person photo first', fitEmptySub: 'Or pick outfits on the right to start',
     fitPhotoTitle: 'Upload your photo', fitUploadBtn: 'Click to upload', fitUploadHint: 'JPG / PNG supported',
     fitBgNone: 'No background', fitBgWhite: 'White',
-    fitGarmentTitle: 'Choose a garment', fitSearchPh: 'Search outfits…',
+    fitGarmentTitle: 'Choose a garment', fitSearchPh: 'Search outfits…', fitRandom: 'Random',
     fitLayerTitle: 'Added layers', fitClear: 'Clear', fitExport: 'Export look',
     fitNoLayer: 'No outfits added yet', fitDownloaded: 'Look exported',
     fitPreview: 'Preview', fitPreviewClose: 'Back to edit', fitPreviewEmpty: 'Nothing to preview yet — upload a photo or add outfits first',
@@ -694,6 +711,9 @@ const I18N = {
     // AI try-on
     aiTitle: 'Generate result', aiDesc: 'Dress the person with the garment using a large model',
     aiModel: 'Model', aiModelGPT: 'GPT Image 2', aiModelDoubao: 'Doubao Seedream (CN)', aiModelGemini: 'Nano Banana 2 (default)',
+    gptModelNotice: '💡 Notice: GPT Image 2 uses a safety-optimized prompt to prevent moderation rejection; generated with modest commercial styling and likeness preservation.',
+    aiGeneratingGPT: 'Generating try-on with GPT Image 2 (safety mode), please wait…',
+    aiSuccessGPT: 'Try-on complete (generated via GPT Image 2 safety mode)',
     aiPickedNone: 'No garment picked — pick one below', aiPicked: 'Picked garment: ',
     aiGenerate: 'Start AI try-on', aiGenerating: 'Generating…', aiNeedPhoto: 'Upload your photo first',
     aiNeedGarment: 'Pick a garment from the "Choose a garment" list first', aiNeedBoth: 'Upload a photo and pick a garment first',
@@ -779,8 +799,19 @@ let LANG = 'zh';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PAGE=120;
-const S={cat:'',q:'',n:PAGE};
+const RANDOM_TAB='__random__';
+const S={cat:'',q:'',n:PAGE,random:false};
 const CATS=META.cats;
+let randomOrder=new Map();
+
+function reshuffle(){
+  const shuffled=[...D];
+  for(let i=shuffled.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+  }
+  randomOrder=new Map(shuffled.map((item,index)=>[item.id,index]));
+}
 
 // ===== i18n 工具 =====
 function t(key){
@@ -822,10 +853,13 @@ document.querySelectorAll('#langswitch button').forEach(b=>{
 
 // ===== 标签页 =====
 function drawTabs(){
-  const tabsData=[['', t('all'), D.length], ...CATS.map(c=>[c, catName(c), META.counts[c]])];
-  $('#tabs').innerHTML=tabsData.map(([v,l,n])=>`<button class="tab" role="tab" data-v="${esc(v)}" aria-selected="${S.cat===v}">${esc(l)}<em>${fmtNum(n)}</em></button>`).join('');
+  const tabsData=[['', t('all'), D.length], [RANDOM_TAB, t('random'), D.length], ...CATS.map(c=>[c, catName(c), META.counts[c]])];
+  $('#tabs').innerHTML=tabsData.map(([v,l,n])=>{
+    const selected=v===RANDOM_TAB ? S.random : !S.random&&S.cat===v;
+    return `<button class="tab" role="tab" data-v="${esc(v)}" aria-selected="${selected}">${esc(l)}<em>${fmtNum(n)}</em></button>`;
+  }).join('');
 }
-$('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;S.cat=b.dataset.v;S.n=PAGE;drawTabs();draw();scrollTo({top:Math.min(scrollY,$('.tools').offsetTop)})};
+$('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;const v=b.dataset.v;if(v===RANDOM_TAB){S.cat='';S.random=true;reshuffle()}else{S.cat=v;S.random=false}S.n=PAGE;drawTabs();draw();scrollTo({top:Math.min(scrollY,$('.tools').offsetTop)})};
 
 // ===== 搜索 =====
 let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{S.q=e.target.value.trim().toLowerCase();S.n=PAGE;draw()},150)};
@@ -873,7 +907,9 @@ function card(d,i){
   <div class="meta"><div class="row"><div class="id">${esc(d.id)}</div><div class="cat">${esc(catName(d.カテゴリ))}</div></div><div class="desc">${esc(kw)}</div></div></article>`;
 }
 function draw(){
-  VIEW=D.filter(hit);const g=$('#grid');
+  VIEW=D.filter(hit);
+  if(S.random)VIEW.sort((a,b)=>(randomOrder.get(a.id)??0)-(randomOrder.get(b.id)??0));
+  const g=$('#grid');
   $('#count').textContent=t('showing').replace('{n}', fmtNum(VIEW.length));
   g.innerHTML=VIEW.slice(0,S.n).map(card).join('');
   if(!VIEW.length)g.innerHTML=`<div class="empty" style="grid-column:1/-1"><b>${t('noResultTitle')}</b>${t('noResultSub')}</div>`;
@@ -965,6 +1001,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   const fitEl = document.getElementById('fitting');
   const garmentList = document.getElementById('fitGarmentList');
   const fitSearch = document.getElementById('fitSearch');
+  const fitRandom = document.getElementById('fitRandom');
 
   // 状态
   let personSrc = null;       // 已上传头像的 src（blob URL）
@@ -1186,6 +1223,13 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   }
   function refreshConfigUI(){
     const aiModelEl = document.getElementById('aiModel');
+    const aiGptNotice = document.getElementById('aiGptNotice');
+    const isGPT = tryonSettings.useCustom
+      ? /gpt-image/i.test(tryonSettings.model || '')
+      : aiModelEl.value === 'gpt-image';
+    if(aiGptNotice){
+      aiGptNotice.style.display = isGPT ? 'block' : 'none';
+    }
     if(tryonSettings.useCustom){
       const providerOption = Array.from(settingsProvider.options).find(option=>option.value===tryonSettings.provider);
       const providerLabel = providerOption ? providerOption.textContent : tryonSettings.provider;
@@ -1356,26 +1400,56 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   });
 
   // ===== 选择服装 =====
-  function refreshGarments(){
-    const list = D.filter(d=>{
+  function getFilteredGarments(){
+    return D.filter(d=>{
       if(!fitSearchQ) return true;
       const idx=new Set([d.id.toLowerCase()]);
       idx.add(d.カテゴリ);
       d.キーワード.split(' ').forEach(w=>{ idx.add(w); const z=EN2ZH[w]; if(z)idx.add(z); });
       const words=fitSearchQ.toLowerCase().split(/\s+/).filter(Boolean);
       return words.every(w=>{ const a=ZH_ALIAS[w]||(ZH2EN[w]?ZH2EN[w][0]:null); for(const s of idx){ if(s.toLowerCase().startsWith(w))return true; if(a&&s.toLowerCase().startsWith(a))return true;} return false; });
-    }).slice(0, 60);
-    garmentList.innerHTML = list.map(d=>`<div class="g${pickedGarment && pickedGarment.id===d.id?' sel':''}" data-id="${esc(d.id)}" title="${esc(d.id)}"><img loading="lazy" src="assets/${esc(d.サムネ)}" alt="${esc(d.id)}"><span class="badge">${esc(d.id)}</span></div>`).join('')
+    });
+  }
+
+  function refreshGarments(){
+    const matches = getFilteredGarments();
+    if(pickedGarment){
+      const pickedIndex = matches.findIndex(d=>d.id===pickedGarment.id);
+      if(pickedIndex>0) matches.unshift(...matches.splice(pickedIndex,1));
+    }
+    const list = matches.slice(0, 60);
+    const hasVisibleSelection = Boolean(pickedGarment && list.some(d=>d.id===pickedGarment.id));
+    garmentList.classList.toggle('has-selection', hasVisibleSelection);
+    fitRandom.disabled = matches.length===0;
+    garmentList.innerHTML = list.map(d=>`<div class="g${pickedGarment && pickedGarment.id===d.id?' sel':''}" data-id="${esc(d.id)}" title="${esc(d.id)}" role="button" tabindex="0" aria-pressed="${pickedGarment && pickedGarment.id===d.id}"><img loading="lazy" src="assets/${esc(d.サムネ)}" alt="${esc(d.id)}"><span class="badge">${esc(d.id)}</span></div>`).join('')
       || `<div style="grid-column:1/-1;color:var(--tx3);font-size:12px;text-align:center;padding:12px 0">${t('noResultTitle')}</div>`;
   }
   fitSearch.addEventListener('input', e=>{ fitSearchQ=e.target.value.trim(); refreshGarments(); });
 
+  function selectGarment(d){
+    pickedGarment = d;
+    refreshGarments();
+    refreshPicked();
+    requestAnimationFrame(()=>garmentList.querySelector('.g.sel')?.scrollIntoView({block:'nearest'}));
+  }
+
+  fitRandom.addEventListener('click', ()=>{
+    const matches = getFilteredGarments();
+    if(!matches.length) return;
+    const alternatives = pickedGarment && matches.length>1 ? matches.filter(d=>d.id!==pickedGarment.id) : matches;
+    selectGarment(alternatives[Math.floor(Math.random()*alternatives.length)]);
+  });
+
   garmentList.addEventListener('click', e=>{
     const g=e.target.closest('.g'); if(!g) return;
     const d = D.find(x=>x.id===g.dataset.id); if(!d) return;
-    pickedGarment = d;                    // 记录选中服装
-    garmentList.querySelectorAll('.g').forEach(el=>el.classList.toggle('sel', el.dataset.id===d.id));
-    refreshPicked();
+    selectGarment(d);
+  });
+  garmentList.addEventListener('keydown', e=>{
+    if(e.key!=='Enter'&&e.key!==' ') return;
+    const g=e.target.closest('.g'); if(!g) return;
+    e.preventDefault();
+    const d = D.find(x=>x.id===g.dataset.id); if(d) selectGarment(d);
   });
 
   // 刷新「当前选中服装」提示条
@@ -1392,7 +1466,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     const buyUrl = 'https://github.com/paipiange/nvzhuang';
     el.className = 'ai-picked has';
     el.innerHTML = `<img src="assets/${esc(pickedGarment.サムネ)}" alt="">` +
-      `<span>${t('aiPicked')}</span><b class="gid">${esc(pickedGarment.id)}</b>` +
+      `<div class="ai-picked-copy"><span>${t('aiPicked')}</span><b class="gid">${esc(pickedGarment.id)}</b></div>` +
       `<a class="btn-buy-tag" href="${buyUrl}" target="_blank" rel="noopener noreferrer" title="前往 GitHub 仓库">🛍️ <span>${t('buySame')}</span></a>`;
     if(aiBuyResult) aiBuyResult.href = buyUrl;
   }
@@ -1446,10 +1520,10 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     });
   }
 
-  function setGenerating(b){
+  function setGenerating(b, isGPT = false){
     aiGenerate.disabled = b;
     aiGenerate.innerHTML = b
-      ? '<span class="ai-spinner"></span>' + t('aiGenerating')
+      ? '<span class="ai-spinner"></span>' + (isGPT ? t('aiGeneratingGPT') : t('aiGenerating'))
       : t('aiGenerate');
   }
   function showHint(msg){ document.querySelector('.fit-hint').textContent = msg; }
@@ -1461,7 +1535,14 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     const aiApi = getAIAPI();
     if(!aiApi){ showHint(t('aiServerErr')); return; }
 
-    setGenerating(true);
+    const isGPT = tryonSettings.useCustom
+      ? /gpt-image/i.test(tryonSettings.model || '')
+      : aiModel.value === 'gpt-image';
+
+    setGenerating(true, isGPT);
+    if(isGPT){
+      showHint(t('aiGeneratingGPT'));
+    }
     try{
       const personB64 = await urlToB64(personSrc);
       const garmentB64 = await urlToB64('assets/'+pickedGarment.画像);
@@ -1511,7 +1592,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       aiResultImg.scrollIntoView({behavior:'smooth', block:'center'});
       try{
         await saveHistoryResult(data.data.image, data.data);
-        showHint(t('historySaved'));
+        showHint(isGPT ? t('aiSuccessGPT') : t('historySaved'));
       }catch(_){
         // 本机存储失败不影响本次生成结果的查看和下载。
         showHint(t('historySaveFailed'));

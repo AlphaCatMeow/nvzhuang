@@ -45,12 +45,18 @@ func DoTryonWithClientConfig(ctx context.Context, personB64, garmentB64, model, 
 		return "", "", "", err
 	}
 
-	// 构建提示词：Gemini 协议用英文模板，其余（GPT-Image / 豆包等）按语言选择
+	// 构建提示词：
+	// 1. GPT-Image-2 专门使用防封控安全提示词；
+	// 2. Gemini 保留原英文稳定提示词；
+	// 3. 豆包等其他模型保留原提示词（按语言选择）。
 	var promptStr string
-	if (clientConfig != nil && strings.EqualFold(clientConfig.Provider, "gemini")) || gen.Name() == "gemini" {
+	isGemini := (clientConfig != nil && strings.EqualFold(clientConfig.Provider, "gemini")) || gen.Name() == "gemini"
+	if isGPTImageModel(model, clientConfig, gen.Name()) {
+		promptStr = BuildGPTSafety(lang)
+	} else if isGemini {
 		promptStr = BuildGemini(lang)
 	} else {
-		promptStr = BuildGPT(lang)
+		promptStr = BuildDefault(lang)
 	}
 
 	// 调用生成
@@ -61,4 +67,19 @@ func DoTryonWithClientConfig(ctx context.Context, personB64, garmentB64, model, 
 	}
 
 	return result, gen.Name(), promptStr, nil
+}
+
+// isGPTImageModel 判断当前请求是否使用 GPT-Image 系列模型
+func isGPTImageModel(model string, clientConfig *ModelConfig, genName string) bool {
+	check := func(s string) bool {
+		lower := strings.ToLower(s)
+		return strings.Contains(lower, "gpt-image") || strings.Contains(lower, "gpt_image")
+	}
+	if check(genName) || check(model) {
+		return true
+	}
+	if clientConfig != nil && (check(clientConfig.Model) || check(clientConfig.Name)) {
+		return true
+	}
+	return false
 }

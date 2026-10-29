@@ -18,9 +18,39 @@ func TestBuildPrompt(t *testing.T) {
 		t.Errorf("BuildGPT(en) should contain virtual try-on, got: %s", gptEn)
 	}
 
+	// Gemini 保留原英文稳定提示词
 	geminiPrompt := BuildGemini("zh")
-	if !strings.Contains(geminiPrompt, "virtual try-on") {
-		t.Errorf("BuildGemini should return stable prompt, got: %s", geminiPrompt)
+	if !strings.Contains(geminiPrompt, "virtual try-on") || !strings.Contains(geminiPrompt, "Keep the person's identity EXACTLY the same") {
+		t.Errorf("BuildGemini should return stable original prompt, got: %s", geminiPrompt)
+	}
+
+	// 通用/其他模型（如豆包）保留原中英文提示词
+	defaultZh := BuildDefault("zh")
+	if !strings.Contains(defaultZh, "你是一名专业的时尚虚拟试衣助手") {
+		t.Errorf("BuildDefault(zh) should return original zhPrompt, got: %s", defaultZh)
+	}
+	defaultEn := BuildDefault("en")
+	if !strings.Contains(defaultEn, "You are a professional fashion virtual try-on assistant") {
+		t.Errorf("BuildDefault(en) should return original enPrompt, got: %s", defaultEn)
+	}
+
+	// GPT-Image 安全提示词验证
+	if !strings.Contains(gptEn, "modest neckline") || !strings.Contains(gptEn, "Fully clothed") {
+		t.Errorf("gptSafetyEnPrompt missing safety constraints")
+	}
+	if !strings.Contains(gptZh, "穿着完整端庄") || !strings.Contains(gptZh, "避免过度露肤") {
+		t.Errorf("gptSafetyZhPrompt missing safety constraints")
+	}
+
+	// isGPTImageModel 识别测试
+	if !isGPTImageModel("gpt-image", nil, "gpt-image") {
+		t.Errorf("expected gpt-image to be detected as GPT model")
+	}
+	if !isGPTImageModel("gemini", &ModelConfig{Model: "gpt-image-2"}, "custom") {
+		t.Errorf("expected clientConfig gpt-image-2 to be detected as GPT model")
+	}
+	if isGPTImageModel("doubao", nil, "doubao") {
+		t.Errorf("doubao should not be detected as GPT model")
 	}
 }
 
@@ -114,5 +144,25 @@ func TestClientConfigOverridesTopLevelModel(t *testing.T) {
 	)
 	if err == nil || !strings.Contains(err.Error(), "不支持的协议类型") {
 		t.Fatalf("expected client config validation to override the top-level gemini model, got: %v", err)
+	}
+}
+
+func TestOpenAIImagesVisualFallback(t *testing.T) {
+	cfg := &ModelConfig{
+		Name:     "gpt-image",
+		Provider: "openai",
+		APIKey:   "dummy-key",
+		BaseURL:  "https://127.0.0.1:9999/v1", // Unreachable URL to test graceful fallback
+		Model:    "gpt-image-2",
+	}
+	adapter := NewOpenAIImages(cfg)
+	if adapter == nil {
+		t.Fatalf("expected NewOpenAIImages to return adapter")
+	}
+
+	// describeVisualFeatures should gracefully return empty string when unreachable, not panic
+	desc := adapter.describeVisualFeatures(context.Background(), "invalid-b64", "invalid-b64")
+	if desc != "" {
+		t.Errorf("expected empty description on network failure, got: %s", desc)
 	}
 }
