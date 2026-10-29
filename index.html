@@ -147,6 +147,8 @@ footer a:hover{color:#fff;text-decoration:underline}
 .fit-settings-open{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 14px;border:1px solid #4a525f;border-radius:10px;background:var(--panel);color:var(--tx);font-size:14px;font-weight:700;cursor:pointer}
 .fit-settings-open:hover{border-color:var(--ac);background:rgba(143,180,255,.08)}
 .fit-settings-open:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.fit-history-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--ac);color:#111;font-size:11px;font-weight:800}
+.fit-history-count[hidden]{display:none}
 .fit-body{flex:1;min-height:0;overflow:hidden;display:flex}
 .fit-scroll{flex:1;overflow-y:auto;padding:20px clamp(16px,4vw,40px) 40px;max-width:760px;margin:0 auto;width:100%}
 /* 步骤卡片 */
@@ -213,14 +215,14 @@ footer a:hover{color:#fff;text-decoration:underline}
 .btn-buy:active{transform:translateY(0)}
 .ai-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(17,17,17,.35);border-top-color:#111;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* AI 设置中心 */
-.settings-overlay{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));background:rgba(5,6,8,.78);backdrop-filter:blur(8px)}
-.settings-overlay[hidden]{display:none}
+/* AI 设置中心 / 本机生成记录 */
+.settings-overlay,.history-overlay{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));background:rgba(5,6,8,.78);backdrop-filter:blur(8px)}
+.settings-overlay[hidden],.history-overlay[hidden]{display:none}
 .settings-card{width:min(620px,100%);max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--line2);border-radius:18px;background:var(--bg2);box-shadow:var(--sh)}
-.settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 20px 14px;border-bottom:1px solid var(--line)}
-.settings-head h2{margin:0 0 5px;font-size:20px}
-.settings-head p{margin:0;color:var(--tx3);font-size:12px;line-height:1.6}
-.settings-close{flex:0 0 44px;width:44px;height:44px;border:1px solid var(--line2);border-radius:50%;background:var(--panel);color:var(--tx);font-size:20px;cursor:pointer}
+.settings-head,.history-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px 20px 14px;border-bottom:1px solid var(--line)}
+.settings-head h2,.history-head h2{margin:0 0 5px;font-size:20px}
+.settings-head p,.history-head p{margin:0;color:var(--tx3);font-size:12px;line-height:1.6}
+.settings-close,.history-close{flex:0 0 44px;width:44px;height:44px;border:1px solid var(--line2);border-radius:50%;background:var(--panel);color:var(--tx);font-size:20px;cursor:pointer}
 .settings-form{display:grid;gap:16px;padding:18px 20px 20px}
 .settings-section{display:grid;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
 .settings-section h3{margin:0;font-size:14px}
@@ -247,13 +249,40 @@ footer a:hover{color:#fff;text-decoration:underline}
 .settings-reset{margin-right:auto;border:1px solid #70434c;background:rgba(255,82,119,.08);color:#ff9aae}
 .settings-cancel{border:1px solid #4a525f;background:var(--panel);color:var(--tx)}
 .settings-save{border:0;background:linear-gradient(90deg,var(--ac),#b39dff);color:#111}
+.history-card{width:min(920px,100%);max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--line2);border-radius:18px;background:var(--bg2);box-shadow:var(--sh)}
+.history-body{padding:16px 20px 22px}
+.history-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.history-note{margin:0;color:var(--tx3);font-size:12px;line-height:1.55}
+.history-clear{flex:0 0 auto;min-height:44px;padding:0 14px;border:1px solid #70434c;border-radius:10px;background:rgba(255,82,119,.08);color:#ff9aae;font-size:13px;font-weight:700;cursor:pointer}
+.history-clear:disabled{opacity:.45;cursor:not-allowed}
+.history-message{min-height:20px;margin-bottom:8px;color:#ffb0b0;font-size:12px}
+.history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.history-grid[aria-busy="true"]{opacity:.58;pointer-events:none}
+.history-item{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.history-image{aspect-ratio:2/3;background:#17191e;overflow:hidden}
+.history-image img{width:100%;height:100%;display:block;object-fit:contain}
+.history-meta{display:grid;gap:5px;padding:11px 12px 8px}
+.history-meta strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-meta span{color:var(--tx3);font-size:11px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 8px 8px}
+.history-actions button{min-width:0;min-height:44px;padding:0 6px;border:1px solid #4a525f;border-radius:9px;background:var(--bg2);color:var(--tx);font-size:12px;font-weight:700;cursor:pointer}
+.history-actions button:hover{border-color:var(--ac)}
+.history-actions .danger{border-color:#70434c;color:#ff9aae}
+.history-empty{padding:54px 18px;text-align:center;border:1px dashed var(--line2);border-radius:14px;color:var(--tx3)}
+.history-empty strong{display:block;margin-bottom:7px;color:var(--tx);font-size:15px}
+.history-empty span{font-size:12px;line-height:1.6}
+.history-empty[hidden]{display:none}
+.history-close:focus-visible,.history-clear:focus-visible,.history-actions button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 @media (max-width:560px){
   .step-photo-row{flex-direction:column}
   .fit-top .fit-hint{order:4;width:100%;margin-left:0}
-  .fit-settings-open{margin-left:auto}
-  .settings-head,.settings-form{padding-left:16px;padding-right:16px}
+  #fitHistoryOpen{margin-left:auto}
+  .settings-head,.settings-form,.history-head,.history-body{padding-left:16px;padding-right:16px}
   .settings-actions button{flex:1 1 auto}
   .settings-reset{margin-right:0;flex-basis:100%!important}
+  .history-toolbar{align-items:flex-start;flex-direction:column}
+  .history-clear{width:100%}
+  .history-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -355,6 +384,11 @@ footer a:hover{color:#fff;text-decoration:underline}
   <div class="fit-top">
     <button type="button" class="back" id="fitBack">‹ <span data-i18n="fitBack">返回图库</span></button>
     <h2 data-i18n="fitTitle">AI 试穿</h2>
+    <button type="button" class="fit-settings-open" id="fitHistoryOpen" aria-haspopup="dialog" aria-controls="aiHistory">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      <span data-i18n="historyTitle">生成记录</span>
+      <b class="fit-history-count" id="aiHistoryCount" hidden>0</b>
+    </button>
     <button type="button" class="fit-settings-open" id="fitSettingsOpen" aria-haspopup="dialog">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.4.2.75.55 1 .95.16.27.25.59.25.91V11h.1v4h-.1c-.32 0-.64.09-.91.25-.4.25-.75.6-.95 1Z"/></svg>
       <span data-i18n="settingsTitle">设置中心</span>
@@ -421,6 +455,31 @@ footer a:hover{color:#fff;text-decoration:underline}
           </div>
         </div>
       </section>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AI 生成记录：图片仅保存在当前浏览器 IndexedDB ===== -->
+<div class="history-overlay" id="aiHistory" role="dialog" aria-modal="true" aria-labelledby="aiHistoryTitle" hidden>
+  <div class="history-card">
+    <div class="history-head">
+      <div>
+        <h2 id="aiHistoryTitle" data-i18n="historyTitle">生成记录</h2>
+        <p data-i18n="historySubtitle">生成结果仅保存在当前浏览器，不会上传或跨设备同步。</p>
+      </div>
+      <button type="button" class="history-close" id="aiHistoryClose" aria-label="关闭">×</button>
+    </div>
+    <div class="history-body">
+      <div class="history-toolbar">
+        <p class="history-note" data-i18n="historyLocalOnly">使用浏览器本机存储；清除浏览器站点数据后，记录也会被删除。</p>
+        <button type="button" class="history-clear" id="aiHistoryClear" data-i18n="historyClear">清空全部</button>
+      </div>
+      <div class="history-message" id="aiHistoryMessage" role="status" aria-live="polite"></div>
+      <div class="history-grid" id="aiHistoryGrid"></div>
+      <div class="history-empty" id="aiHistoryEmpty" hidden>
+        <strong data-i18n="historyEmpty">还没有生成记录</strong>
+        <span data-i18n="historyEmptyHint">完成一次 AI 换装后，结果会自动保存在这里。</span>
+      </div>
     </div>
   </div>
 </div>
@@ -574,6 +633,13 @@ const I18N = {
     settingsBackendOutdated: '当前试穿后端版本过旧，未识别个人模型配置。请重新编译并重启后端；Docker 请执行 docker compose up -d --build。',
     settingsServerPreset: '服务器预设模型', settingsPersonal: '个人模型配置',
     settingsServerNote: 'Key 与模型参数由试穿后端管理', settingsPersonalNote: 'Key 仅随本次请求临时发送，后端不保存',
+    historyTitle: '生成记录', historySubtitle: '生成结果仅保存在当前浏览器，不会上传或跨设备同步。',
+    historyLocalOnly: '使用浏览器本机存储；清除浏览器站点数据后，记录也会被删除。',
+    historyEmpty: '还没有生成记录', historyEmptyHint: '完成一次 AI 换装后，结果会自动保存在这里。',
+    historyClear: '清空全部', historyClearConfirm: '确定删除当前浏览器里的全部生成记录吗？此操作无法撤销。',
+    historyDelete: '删除', historyDeleteConfirm: '确定删除这条生成记录吗？', historyView: '查看', historyDownload: '下载',
+    historySaved: '换装完成，已保存到本机生成记录', historySaveFailed: '换装完成，但浏览器无法保存生成记录',
+    historyLoadFailed: '无法读取本机生成记录，请检查浏览器存储权限。', historyGarment: '服装',
   },
   en: {
     eyebrow: 'COSTUME-DB-01 · PaipianGe Costume Reference Gallery',
@@ -651,6 +717,13 @@ const I18N = {
     settingsBackendOutdated: 'The try-on backend is outdated and did not recognize the personal model configuration. Rebuild and restart it; for Docker, run docker compose up -d --build.',
     settingsServerPreset: 'Server preset', settingsPersonal: 'Personal model',
     settingsServerNote: 'The backend manages the key and model parameters', settingsPersonalNote: 'The key is sent for this request only and is not stored by the backend',
+    historyTitle: 'Generation history', historySubtitle: 'Results stay in this browser and are never uploaded or synced across devices.',
+    historyLocalOnly: 'Stored locally by your browser. Clearing this site’s browser data will also remove these records.',
+    historyEmpty: 'No generation history yet', historyEmptyHint: 'Completed AI try-on results will be saved here automatically.',
+    historyClear: 'Clear all', historyClearConfirm: 'Delete all generation history from this browser? This cannot be undone.',
+    historyDelete: 'Delete', historyDeleteConfirm: 'Delete this generation record?', historyView: 'View', historyDownload: 'Download',
+    historySaved: 'Try-on complete and saved to local history', historySaveFailed: 'Try-on complete, but the browser could not save it locally',
+    historyLoadFailed: 'Cannot read local generation history. Check browser storage permissions.', historyGarment: 'Garment',
   }
 };
 
@@ -923,7 +996,20 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   const settingsMessage = document.getElementById('settingsMessage');
   const aiConfigName = document.getElementById('aiConfigName');
   const aiConfigNote = document.getElementById('aiConfigNote');
+  const historyEl = document.getElementById('aiHistory');
+  const historyGrid = document.getElementById('aiHistoryGrid');
+  const historyEmpty = document.getElementById('aiHistoryEmpty');
+  const historyMessage = document.getElementById('aiHistoryMessage');
+  const historyClear = document.getElementById('aiHistoryClear');
+  const historyCount = document.getElementById('aiHistoryCount');
   let settingsReturnFocus = null;
+  let historyReturnFocus = null;
+  let historyObjectUrls = [];
+
+  const HISTORY_DB_NAME = 'paipiange.tryon.history';
+  const HISTORY_DB_VERSION = 1;
+  const HISTORY_STORE = 'generations';
+  let historyDbPromise = null;
 
   function loadSettings(){
     try{
@@ -934,6 +1020,150 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     }catch(_){ return {...SETTINGS_DEFAULTS}; }
   }
   let tryonSettings = loadSettings();
+
+  // 生成图片通常远超 localStorage 容量，因此使用 IndexedDB 保存 Blob。
+  // 历史中只存结果、时间、模型和服装 ID，不保存 API Key、Base URL 或上传的人像。
+  function openHistoryDB(){
+    if(historyDbPromise) return historyDbPromise;
+    historyDbPromise = new Promise((resolve, reject)=>{
+      if(!('indexedDB' in window)){ reject(new Error('IndexedDB unavailable')); return; }
+      const request = indexedDB.open(HISTORY_DB_NAME, HISTORY_DB_VERSION);
+      request.onupgradeneeded = ()=>{
+        const db = request.result;
+        if(!db.objectStoreNames.contains(HISTORY_STORE)){
+          const store = db.createObjectStore(HISTORY_STORE, {keyPath:'id'});
+          store.createIndex('createdAt', 'createdAt');
+        }
+      };
+      request.onsuccess = ()=>resolve(request.result);
+      request.onerror = ()=>reject(request.error || new Error('IndexedDB open failed'));
+      request.onblocked = ()=>reject(new Error('IndexedDB upgrade blocked'));
+    });
+    return historyDbPromise;
+  }
+
+  async function historyRequest(mode, operation){
+    const db = await openHistoryDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(HISTORY_STORE, mode);
+      const request = operation(tx.objectStore(HISTORY_STORE));
+      let result;
+      if(request){
+        request.onsuccess = ()=>{ result = request.result; };
+        request.onerror = ()=>reject(request.error || new Error('IndexedDB request failed'));
+      }
+      tx.oncomplete = ()=>resolve(result);
+      tx.onerror = ()=>reject(tx.error || new Error('IndexedDB transaction failed'));
+      tx.onabort = ()=>reject(tx.error || new Error('IndexedDB transaction aborted'));
+    });
+  }
+
+  const getHistoryRecords = async()=>{
+    const records = await historyRequest('readonly', store=>store.getAll());
+    return (records || []).sort((a,b)=>(b.createdAt || 0) - (a.createdAt || 0));
+  };
+  const getHistoryRecord = id=>historyRequest('readonly', store=>store.get(id));
+  const putHistoryRecord = record=>historyRequest('readwrite', store=>store.put(record));
+  const deleteHistoryRecord = id=>historyRequest('readwrite', store=>store.delete(id));
+  const clearHistoryRecords = ()=>historyRequest('readwrite', store=>store.clear());
+  const countHistoryRecords = ()=>historyRequest('readonly', store=>store.count());
+
+  function b64ToBlob(value){
+    const b64 = String(value || '').replace(/^data:[^,]+,/, '');
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], {type:'image/png'});
+  }
+
+  function blobToDataUrl(blob){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = ()=>resolve(reader.result);
+      reader.onerror = ()=>reject(reader.error || new Error('Blob read failed'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function formatHistoryDate(value){
+    try{
+      return new Intl.DateTimeFormat(LANG==='zh'?'zh-CN':'en-US', {dateStyle:'medium', timeStyle:'short'}).format(new Date(value));
+    }catch(_){ return new Date(value).toLocaleString(); }
+  }
+
+  function releaseHistoryObjectUrls(){
+    historyObjectUrls.forEach(url=>URL.revokeObjectURL(url));
+    historyObjectUrls = [];
+  }
+
+  async function updateHistoryCount(){
+    try{
+      const count = await countHistoryRecords();
+      historyCount.textContent = count > 99 ? '99+' : String(count);
+      historyCount.hidden = count < 1;
+    }catch(_){ historyCount.hidden = true; }
+  }
+
+  async function renderHistory(){
+    releaseHistoryObjectUrls();
+    historyGrid.setAttribute('aria-busy', 'true');
+    historyMessage.textContent = '';
+    try{
+      const records = await getHistoryRecords();
+      historyClear.disabled = records.length === 0;
+      historyEmpty.hidden = records.length !== 0;
+      historyGrid.innerHTML = records.map(record=>{
+        const imageUrl = URL.createObjectURL(record.image);
+        historyObjectUrls.push(imageUrl);
+        const model = record.provider ? `${record.provider} · ${record.model}` : record.model;
+        const garment = record.garmentId ? `${t('historyGarment')} · ${record.garmentId}` : t('historyGarment');
+        return `<article class="history-item" data-id="${esc(record.id)}">`+
+          `<div class="history-image"><img loading="lazy" src="${imageUrl}" alt="${esc(garment)}"></div>`+
+          `<div class="history-meta"><strong>${esc(garment)}</strong><span title="${esc(model || '')}">${esc(model || '')}</span><span>${esc(formatHistoryDate(record.createdAt))}</span></div>`+
+          `<div class="history-actions">`+
+            `<button type="button" data-action="view">${t('historyView')}</button>`+
+            `<button type="button" data-action="download">${t('historyDownload')}</button>`+
+            `<button type="button" class="danger" data-action="delete">${t('historyDelete')}</button>`+
+          `</div></article>`;
+      }).join('');
+    }catch(_){
+      historyGrid.innerHTML = '';
+      historyEmpty.hidden = true;
+      historyClear.disabled = true;
+      historyMessage.textContent = t('historyLoadFailed');
+    }finally{
+      historyGrid.setAttribute('aria-busy', 'false');
+    }
+  }
+
+  async function openHistory(trigger){
+    historyReturnFocus = trigger || document.activeElement;
+    historyEl.hidden = false;
+    historyEl.querySelector('.history-card').scrollTop = 0;
+    await renderHistory();
+    requestAnimationFrame(()=>document.getElementById('aiHistoryClose').focus());
+  }
+
+  function closeHistory(){
+    historyEl.hidden = true;
+    releaseHistoryObjectUrls();
+    if(historyReturnFocus && historyReturnFocus.focus) historyReturnFocus.focus();
+  }
+
+  async function saveHistoryResult(imageB64, responseData){
+    const createdAt = Date.now();
+    const randomId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    const record = {
+      id: `${createdAt}-${randomId}`,
+      createdAt,
+      garmentId: pickedGarment ? pickedGarment.id : '',
+      provider: tryonSettings.useCustom ? tryonSettings.provider : '',
+      model: tryonSettings.useCustom ? tryonSettings.model : (responseData.model || aiModel.value),
+      image: b64ToBlob(imageB64),
+    };
+    await putHistoryRecord(record);
+    await updateHistoryCount();
+  }
 
   function validHttpUrl(value){
     if(!value) return true;
@@ -984,6 +1214,55 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     settingsMessage.textContent = message;
     settingsMessage.className = 'settings-message' + (ok ? ' ok' : '');
   }
+
+  document.getElementById('fitHistoryOpen').addEventListener('click', e=>openHistory(e.currentTarget));
+  document.getElementById('aiHistoryClose').addEventListener('click', closeHistory);
+  historyEl.addEventListener('pointerdown', e=>{ if(e.target===historyEl) closeHistory(); });
+  historyClear.addEventListener('click', async()=>{
+    if(!confirm(t('historyClearConfirm'))) return;
+    try{
+      await clearHistoryRecords();
+      await updateHistoryCount();
+      await renderHistory();
+    }catch(_){ historyMessage.textContent = t('historyLoadFailed'); }
+  });
+  historyGrid.addEventListener('click', async e=>{
+    const button = e.target.closest('button[data-action]');
+    const item = e.target.closest('.history-item');
+    if(!button || !item) return;
+    const id = item.dataset.id;
+    try{
+      if(button.dataset.action === 'delete'){
+        if(!confirm(t('historyDeleteConfirm'))) return;
+        await deleteHistoryRecord(id);
+        await updateHistoryCount();
+        await renderHistory();
+        return;
+      }
+      const record = await getHistoryRecord(id);
+      if(!record || !(record.image instanceof Blob)) throw new Error('History image missing');
+      if(button.dataset.action === 'download'){
+        const url = URL.createObjectURL(record.image);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `AI换装-${record.garmentId || record.createdAt}.png`;
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(url), 1000);
+        return;
+      }
+      if(button.dataset.action === 'view'){
+        const dataUrl = await blobToDataUrl(record.image);
+        aiResultB64 = String(dataUrl).split(',')[1] || '';
+        aiResultImg.src = dataUrl;
+        aiResultImg.style.display = 'block';
+        aiResultEmpty.style.display = 'none';
+        aiResultBar.style.display = 'flex';
+        closeHistory();
+        showHint(t('aiResult'));
+        aiResultImg.scrollIntoView({behavior:'smooth', block:'center'});
+      }
+    }catch(_){ historyMessage.textContent = t('historyLoadFailed'); }
+  });
 
   document.getElementById('fitSettingsOpen').addEventListener('click', e=>openSettings(e.currentTarget));
   document.getElementById('aiSettingsOpen').addEventListener('click', e=>openSettings(e.currentTarget));
@@ -1038,6 +1317,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   document.getElementById('fitBack').addEventListener('click', close);
   document.addEventListener('keydown', e=>{
     if(e.key!=='Escape') return;
+    if(!historyEl.hidden){ e.preventDefault(); e.stopImmediatePropagation(); closeHistory(); return; }
     if(!settingsEl.hidden){ e.preventDefault(); e.stopImmediatePropagation(); closeSettings(); return; }
     if(fitEl.classList.contains('open')) close();
   });
@@ -1124,6 +1404,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     if(fitEl.classList.contains('open')) refreshGarments();
     refreshPicked();
     refreshConfigUI();
+    if(!historyEl.hidden) renderHistory();
     settingsKeyToggle.textContent = t(settingsApiKey.type === 'text' ? 'settingsHideKey' : 'settingsShowKey');
   };
 
@@ -1226,9 +1507,15 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       aiResultImg.style.display = 'block';
       aiResultEmpty.style.display = 'none';
       aiResultBar.style.display = 'flex';
-      showHint(t('aiResult'));
       // 滚动到结果
       aiResultImg.scrollIntoView({behavior:'smooth', block:'center'});
+      try{
+        await saveHistoryResult(data.data.image, data.data);
+        showHint(t('historySaved'));
+      }catch(_){
+        // 本机存储失败不影响本次生成结果的查看和下载。
+        showHint(t('historySaveFailed'));
+      }
     }catch(_){
       // 不把包含第三方响应细节的错误写入浏览器控制台，避免误带敏感配置。
       showHint(t('aiServerErr'));
@@ -1246,6 +1533,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     a.click();
   });
   aiRegenerate.addEventListener('click', doTryon);
+  updateHistoryCount();
 })();
 
 // ===== 初始化 =====
