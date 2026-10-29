@@ -699,7 +699,7 @@ function showM(){
       });
     }
   };
-  const mbuy=$('#mbuy');if(mbuy)mbuy.href='https://paipiange.com/nvzhuang.html?code='+encodeURIComponent(d.id);
+  const mbuy=$('#mbuy');if(mbuy)mbuy.href='https://github.com/paipiange/nvzhuang';
 }
 function step(n){const j=MI+n;if(j<0||j>=VIEW.length)return;MI=j;if(j>=S.n)addMore();showM()}
 $('#mprev').onclick=()=>step(-1);$('#mnext').onclick=()=>step(1);$('#mclose').onclick=closeM;
@@ -816,11 +816,11 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       if(aiBuyResult) aiBuyResult.href = '#';
       return;
     }
-    const buyUrl = `https://paipiange.com/nvzhuang.html?code=${encodeURIComponent(pickedGarment.id)}`;
+    const buyUrl = 'https://github.com/paipiange/nvzhuang';
     el.className = 'ai-picked has';
     el.innerHTML = `<img src="assets/${esc(pickedGarment.サムネ)}" alt="">` +
       `<span>${t('aiPicked')}</span><b class="gid">${esc(pickedGarment.id)}</b>` +
-      `<a class="btn-buy-tag" href="${buyUrl}" target="_blank" rel="noopener noreferrer" title="前往购买同款 ${esc(pickedGarment.id)}">🛍️ <span>${t('buySame')}</span></a>`;
+      `<a class="btn-buy-tag" href="${buyUrl}" target="_blank" rel="noopener noreferrer" title="前往 GitHub 仓库">🛍️ <span>${t('buySame')}</span></a>`;
     if(aiBuyResult) aiBuyResult.href = buyUrl;
   }
 
