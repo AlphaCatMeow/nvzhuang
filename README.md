@@ -42,6 +42,8 @@
 - **AI 试穿搭配台**：上传人像 + 选服装，在线预览、拖拽缩放、抠图合成，或一键 AI 换装（需自备后端）
 - **浏览器设置中心**：可保存自己的后端地址、Base URL、API Key、接口协议与模型名；个人配置只保存在当前浏览器，后端仅按单次请求临时使用
 - **本机生成记录**：AI 换装成功后自动保存到当前浏览器的 IndexedDB，可随时查看、下载、单条删除或全部清空，不上传、不跨设备同步
+- **电商以图搜同款**：大图详情与试穿操作区支持一键唤起淘宝图片搜索，快速查找现实中在售的同款服饰
+- **ComfyUI 本地离线生图**：支持零成本、免 API Key 本地私密运行；集成阿里开源 **Qwen-Image-Edit-2511 (Int8) + 4 步极速 Lightning LoRA** 与 **MiniMax H3** 双工作流，具备自动容灾回退能力
 
 ## 🤖 AI 换装（可选功能）
 
@@ -49,7 +51,8 @@
 
 | 模型别名 | 模型 | 协议 | 说明 |
 |---|---|---|---|
-| `gemini` | **Nano Banana 2**（`gemini-3.1-flash-image`） | Google generateContent | **默认模型**，对真人换装场景无 moderation 阻断 |
+| `comfyui` | **Qwen-Image-Edit-2511**（优先） / MiniMax H3 | ComfyUI 本地 API | **本地零成本离线方案**，4 步极速换装，无审查限制，未就绪自动回退 H3 |
+| `gemini` | **Nano Banana 2**（`gemini-3.1-flash-image`） | Google generateContent | **云端推荐默认**，对真人换装场景无 moderation 阻断 |
 | `doubao` | 豆包 Seedream（火山方舟） | 火山方舟 | 国内可用，无需代理网络 |
 | `gpt-image` | **GPT Image 2**（`gpt-image-2`） | OpenAI Images | 兼容 OpenAI 协议，支持第三方中转与代理 |
 | `qwen` / `zhipu` / `siliconflow` … | 通义万相 / 智谱 CogView / 硅基流动 | OpenAI Images 兼容 | 按需在配置中开启 |
@@ -98,7 +101,21 @@ llm:
       envKey: "DASHSCOPE_API_KEY"
       baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
       model: "wanx2.1-t2i-turbo"
+
+    # 本地 ComfyUI（零成本离线极速换装，支持 Qwen-Image-Edit / MiniMax H3）
+    comfyui:
+      provider: comfyui
+      baseURL: "http://127.0.0.1:8188"
+      model: "qwen-image-edit-2511"
+      workflowPath: "workflows/comfyui_qwen_image_edit_2511_api.json"
 ```
+
+### 🎨 ComfyUI 本地离线模式（推荐：零成本、免 Key、超快速度）
+
+如果你的电脑拥有独立显卡（或局域网有运行 ComfyUI 的主机），可以完全免 Key 使用本地生图：
+1. 启动本地 ComfyUI（默认 `http://127.0.0.1:8188`）；
+2. 放入 `Qwen-Image-Edit-2511` 的模型与 4 步 Lightning LoRA（详见 [`backend/README.MD`](backend/README.MD)）；
+3. 打开网页右上角 **设置中心**，选择「ComfyUI 本地」，点击「测试连接」成功后保存，即可享受 4 步极速离线换装体验。系统已内置双模型自适应能力，未就绪时会自动回退至 H3 方案。
 
 ### 🚀 后端部署（优先推荐 Docker）
 

@@ -6,11 +6,12 @@
 
 - 一台能访问对应服务商的服务器（调国外模型需能访问 OpenAI / Google，用豆包等国内模型则只需能访问国内网络即可）
 - 服务器已安装 Go 1.18+ 或 Docker
-- 已申请 API Key（按需，用哪个模型就配哪个）：
+- 已申请 API Key（按需，用哪个模型就配哪个；若使用本地 ComfyUI 则完全不需要申请 Key）：
   - OpenAI GPT-Image：`sk-...`（https://platform.openai.com）
   - 豆包（火山方舟）：`ARK...`（https://console.volcengine.com/ark）
   - Google Gemini：`AIza...`（https://aistudio.google.com）
   - 其他：通义万相、智谱 CogView、硅基流动等 OpenAI 兼容服务均可接入
+  - ComfyUI 本地离线部署：若主机拥有独立显卡，支持直接接入本地 ComfyUI（优先 Qwen-Image-Edit-2511 4步极速生图，兼容 MiniMax H3），无需任何云端 API 费用。详见 `README.MD`。
 
 ## 二、推荐部署方式（优先 Docker）
 
@@ -99,6 +100,12 @@ llm:
       envKey: "DASHSCOPE_API_KEY"
       baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
       model: "wanx2.1-t2i-turbo"
+
+    comfyui:              # 本地 ComfyUI 离线方案（默认 Qwen 优先，自动回退 H3）
+      provider: comfyui
+      baseURL: "http://127.0.0.1:8188"
+      model: "qwen-image-edit-2511"
+      workflowPath: "workflows/comfyui_qwen_image_edit_2511_api.json"
 ```
 
 > 关键点：
