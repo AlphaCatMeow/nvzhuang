@@ -26,12 +26,14 @@ cp .env.example .env
 # 2. 编辑 .env 文件，填入你使用的模型 API Key（按需填写，国内优先推荐豆包 ARK_API_KEY）
 # 例如：ARK_API_KEY=xxxx
 
-# 3. 一键构建并启动后台容器
+# 3. 一键构建并启动后台容器（内置开箱即用自动兜底，默认监听 8000 端口）
 docker compose up -d
 
 # 查看日志
 docker compose logs -f
 ```
+
+> 说明：系统默认自动加载配置模板并绑定 `:8000` 端口。若需深度定制模型或路由，可复制配置：`cp manifest/config/config.example.yaml manifest/config/config.yaml`。
 
 ### 方式 B：Docker Run 单命令运行
 
@@ -118,9 +120,9 @@ llm:
 
 前端 `index.html` 按以下优先级获取后端地址：
 
-1. **设置中心**：用户在当前浏览器保存的后端 API 地址
+1. **设置中心**：用户在当前浏览器保存的后端 API 地址（公网外部地址须使用 `HTTPS`）
 2. **全局变量**：在页面加载前设置 `window.AI_API_URL = "https://api.你的域名"`
-3. **URL 参数**：`https://你的前端/?tryon=https://api.你的域名`
+3. **URL 参数**：`https://你的前端/?tryon=http://127.0.0.1:8000`（安全约束：为防止跨域钓鱼窃取 API Key 与私密照片，`?tryon=` 仅允许同源地址或本机回环 `localhost/127.0.0.1`；外部后端须在设置中心显式保存）
 4. **本地自动回退**：访问宿主为 `localhost` 或 `127.0.0.1` 时，自动尝试回退连接 `http://127.0.0.1:8000`
 
 > 建议：若部署公网，把后端反向代理到 `https://api.你的域名`（Nginx 配置见下），前端部署时在 `index.html` 顶部加一句：
@@ -152,29 +154,63 @@ server {
 }
 ```
 
-## 五、安全与成本控制提醒
+## 五、安全与成本控制防护（公网部署必读）
 
-1. **默认仅建议本地或内网自用**：容器或后端默认仅供开发者本机或私有网络自用。**不建议在无鉴权、无限流的情况下直接将 `:8000` 端口裸露到公网**，以防被他人批量刷取产生高额大模型账单。
-2. **公网开放防护建议**：若确实需要部署公网供朋友或用户体验，必须通过 Nginx 等反向代理层配置：
-   - 严格的 IP 限流与防刷机制（如 `limit_req_zone`）
-   - 单次请求 Body 上限控制（限制在 20MB 以内，防止大文件 OOM）
-   - 服务端简易鉴权（Token 或验证码）
-3. **API Key 隔离与保护**：
-   - Key 仅保存在服务器本地环境变量或 `.env`，禁止将包含真实 Key 的 `config.yaml` 或 `.env` 提交到公开仓库。
-   - 默认的「服务器预设」模式下，前端不接触服务器 API Key，所有大模型通信均由后端代理中转。
-   - 可选的「个人模型配置」由用户主动保存在自己的浏览器，并只随单次 `/tryon` 请求发送。后端不写数据库、配置文件或业务日志；Gemini Key 使用请求头传递，不进入上游 URL。
-   - 个人 Base URL 默认拒绝 localhost、内网与保留地址，且不允许查询参数，避免公开后端被滥用为 SSRF 代理或把 Key 写入 URL。
-4. **模型内容安全遵从**：各模型提供商（如 OpenAI、Google、火山引擎）对真人图像生成均有内容安全审核（Moderation），请遵守相关法律法规与平台服务条款，勿用于违背公序良俗的场景。
+针对 `/tryon` 换装接口，后端已原生集成**访问鉴权、CORS 精确白名单、速率限制、每日配额、并发控制与图片安全校验**，防止大模型账单被恶意刷取或服务器资源耗尽：
+
+### 1. 访问凭证鉴权（Bearer Token）
+- **开启鉴权**：在 `manifest/config/config.yaml` 中配置 `security.authRequired: true`（本地调试可临时设为 `false`，公开部署必须为 `true`）。
+- **配置密钥**：在环境变量或 `.env` 文件中设置 `TRYON_API_KEYS`（多个 Token 用英文逗号分隔，每个 Token 须为 32 到 512 个字符）。
+  ```bash
+  TRYON_API_KEYS="your-secure-token-with-at-least-32-chars-long-1234,another-client-token-5678"
+  ```
+- **脱敏安全存储**：后端仅在内存保存 Token 的 SHA-256 哈希摘要，比对使用恒定时间比对（Constant-Time Compare）防止时序侧信道攻击；日志、错误响应与响应头中绝不打印任何 Token 明文。
+- **前端配置**：用户可在前端「设置中心」的「试穿后端」区域填入「后端访问 Token」（与第三方模型 API Key 完全隔离独立存储）。发起请求时，前端自动在 Header 中注入 `Authorization: Bearer <token>`。
+
+### 2. 严格的 CORS 跨域来源白名单
+- `security.trustedOrigins` 必须配置精确来源域名（如 `https://paipiange.github.io`、`http://localhost:3000`），禁止配置通配符 `*`。
+- 未授权来源发起跨域请求将直接返回 HTTP 403（业务错误码 `40301`，`ORIGIN_NOT_ALLOWED`）。
+
+### 3. 频控限流、每日额度与并发锁定
+- **令牌桶速率限制**（默认 10 次/分，突发 3 次）：超出限制时立即拒绝并返回 HTTP 429（`42901`，`RATE_LIMITED`），并在响应头附带 `Retry-After` 秒数。
+- **每日生成额度**（默认每个调用方 100 次/天）：额度按 UTC 自然日重置；仅当请求通过全部鉴权与图片校验、即将进入模型生成时原子扣减；额度耗尽返回 HTTP 429（`42902`，`DAILY_QUOTA_EXCEEDED`）。*(注：首版配额计数器保存在进程内存中，后端重启会重置)*。
+- **并发控制**（全局最大 2 并发，单主体最大 1 并发）：超过并发上限时立即返回 HTTP 429（`42903`，`CONCURRENCY_LIMITED`），不排队阻塞服务器连接。
+
+### 4. 请求体与图片安全限制
+- **请求体体积**：HTTP 请求体上限默认限制为 24 MiB（`maxRequestBodyBytes: 25165824`），超限在 JSON 解析前直接截断返回 HTTP 413（`41301`，`REQUEST_TOO_LARGE`）。
+- **真实文件格式**：后端使用内容嗅探及图像解码器严格检测真实 MIME，仅允许 `image/jpeg`、`image/png`、`image/webp`，禁止 SVG、GIF、可执行文件等格式（`42202`，`UNSUPPORTED_IMAGE_TYPE`）。
+- **图片尺寸与像素**：
+  - 单图解码后体积上限 8 MiB，两图（人像+服装）合计上限 16 MiB（`42203`，`IMAGE_FILE_TOO_LARGE`）。
+  - 宽、高必须在 256 px 至 8192 px 之间（`42204`，`IMAGE_DIMENSIONS_INVALID`）。
+  - 总像素乘积不超过 20,000,000 px（防止超大图像解压导致的内存耗尽炸弹，`42205`，`IMAGE_PIXEL_LIMIT_EXCEEDED`）。
+- **前端自动压缩**：前端在上传与发送前自动进行阶梯压缩，最长边自适应缩小到 2048 px 内，优先采用 WebP（质量 0.90），降级 JPEG（0.90~0.75），确保绝大多数手机实拍照片无感顺畅上传。
+
+### 5. API Key 隔离与保护
+- Key 仅保存在服务器本地环境变量或 `.env`，禁止将包含真实 Key 的 `config.yaml` 或 `.env` 提交到公开仓库。
+- 默认的「服务器预设」模式下，前端不接触服务器 API Key，所有大模型通信均由后端代理中转。
+- 可选的「个人模型配置」由用户主动保存在自己的浏览器，并只随单次 `/tryon` 请求发送。后端不写数据库、配置文件或业务日志；Gemini Key 使用请求头传递，不进入上游 URL。
+- 个人 Base URL 默认拒绝 localhost、内网与保留地址，且不允许查询参数，避免公开后端被滥用为 SSRF 代理或把 Key 写入 URL。
+
+### 6. 模型内容安全遵从
+各模型提供商（如 OpenAI、Google、火山引擎）对真人图像生成均有内容安全审核（Moderation），请遵守相关法律法规与平台服务条款，勿用于违背公序良俗的场景。
 
 ## 六、验证部署
 
-部署后测试：
+部署后测试（若开启了鉴权，请带上 `Authorization: Bearer <token>`）：
 
 ```bash
-# 健康检查（应返回校验错误，说明服务在线）
+# 未带 Token 或错误 Token（预期返回 HTTP 401: AUTH_REQUIRED）
 curl -X POST https://api.你的域名/tryon -H "Content-Type: application/json" -d '{}'
 
-# 预期返回：{"code":51,"message":"The PersonImage field is required","data":null}
+# 预期返回：{"code":40101,"message":"请在设置中心填写后端访问 Token","data":{"error_code":"AUTH_REQUIRED","request_id":"..."}}
+
+# 携带合法 Token 验证连通性
+curl -X POST https://api.你的域名/tryon \
+  -H "Authorization: Bearer 你的Token" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+# 预期返回缺少参数验证错误：{"code":51,"message":"The PersonImage field is required","data":null}
 ```
 
 看到这个响应，说明后端已正常运行，即可在前端使用「AI 换装」。

@@ -34,6 +34,8 @@ type ClientModelConfig struct {
 type TryonRes struct {
 	// 生成的换装结果图（base64）
 	Image string `json:"image" dc:"换装结果图，base64"`
+	// 结果图片的真实 MIME 类型（根据文件签名字节检测）
+	MIME string `json:"mime" dc:"结果图片 MIME 类型"`
 	// 使用的模型
 	Model string `json:"model" dc:"实际使用的模型"`
 	// 提示词（调试用，可空）

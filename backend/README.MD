@@ -136,6 +136,7 @@ cp manifest/config/config.example.yaml manifest/config/config.yaml
 ```json
 {
   "image": "换装结果图 base64",
+  "mime": "image/jpeg",
   "model": "gemini",
   "prompt": "实际使用的提示词"
 }
