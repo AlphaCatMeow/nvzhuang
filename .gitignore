@@ -17,3 +17,8 @@ desktop.ini
 id_rsa*
 *.p12
 *.pfx
+
+# 本地配置文件与日志（禁止提交任何真实 Key 与凭据）
+config.yaml
+**/config/config.yaml
+*.log

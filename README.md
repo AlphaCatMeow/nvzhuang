@@ -131,11 +131,13 @@ llm:
 # 1. 复制环境变量模板并填入你的 Key（如国内免翻墙的豆包 ARK_API_KEY，或 OpenAI Key）
 cp backend/.env.example backend/.env
 
-# 2. 一键启动后端
+# 2. 一键启动后端（内置开箱即用兜底，默认监听 8000 端口）
 docker compose up -d
 
 # 服务启动后监听在 http://localhost:8000
 ```
+
+> 提示：若需深度定制模型或高级路由，可复制配置文件模板：`cp backend/manifest/config/config.example.yaml backend/manifest/config/config.yaml`（未复制时系统也会自动使用模板并稳定监听 8000 端口）。
 
 #### 方式二：Docker Run 单命令运行
 
@@ -159,17 +161,19 @@ docker run -d --name costume-tryon \
 - **命令行运行**：
   ```bash
   cd backend
+  # 可选：复制配置文件（不复制时也会自动安全回退加载模板并监听 8000）
+  # cp manifest/config/config.example.yaml manifest/config/config.yaml
   export ARK_API_KEY="你的Key"   # Windows PowerShell 用 $env:ARK_API_KEY="你的Key"
-  go run main.go                 # 服务监听 :8000
+  go run main.go                 # 服务稳定监听 :8000
   ```
 
 ### 🔗 前端对接后端
 
 前端静态页面通过以下顺序识别换装后端地址（优先级从高到低）：
 
-1. **设置中心**：用户在当前浏览器保存的「后端 API 地址」
+1. **设置中心**：用户在当前浏览器保存的「后端 API 地址」（跨源外部公网后端须使用 `HTTPS`）
 2. **全局变量**：在 HTML 加载前配置 `window.AI_API_URL = "http://localhost:8000"`
-3. **URL 参数**：`https://你的前端地址/?tryon=http://localhost:8000`
+3. **URL 参数**：`https://你的前端地址/?tryon=http://localhost:8000`（安全约束：为防止钓鱼窃取 API Key 与私密照片，`?tryon=` 仅允许同源或本机回环 `localhost/127.0.0.1`；外部后端须在设置中心显式保存）
 4. **本地回退**：本地以 `localhost` 或 `127.0.0.1` 访问前端时，默认自动连接 `http://127.0.0.1:8000`
 
 ### 🛡️ 接口安全与资源限制（公网部署必备）

@@ -26,12 +26,14 @@ cp .env.example .env
 # 2. 编辑 .env 文件，填入你使用的模型 API Key（按需填写，国内优先推荐豆包 ARK_API_KEY）
 # 例如：ARK_API_KEY=xxxx
 
-# 3. 一键构建并启动后台容器
+# 3. 一键构建并启动后台容器（内置开箱即用自动兜底，默认监听 8000 端口）
 docker compose up -d
 
 # 查看日志
 docker compose logs -f
 ```
+
+> 说明：系统默认自动加载配置模板并绑定 `:8000` 端口。若需深度定制模型或路由，可复制配置：`cp manifest/config/config.example.yaml manifest/config/config.yaml`。
 
 ### 方式 B：Docker Run 单命令运行
 
@@ -118,9 +120,9 @@ llm:
 
 前端 `index.html` 按以下优先级获取后端地址：
 
-1. **设置中心**：用户在当前浏览器保存的后端 API 地址
+1. **设置中心**：用户在当前浏览器保存的后端 API 地址（公网外部地址须使用 `HTTPS`）
 2. **全局变量**：在页面加载前设置 `window.AI_API_URL = "https://api.你的域名"`
-3. **URL 参数**：`https://你的前端/?tryon=https://api.你的域名`
+3. **URL 参数**：`https://你的前端/?tryon=http://127.0.0.1:8000`（安全约束：为防止跨域钓鱼窃取 API Key 与私密照片，`?tryon=` 仅允许同源地址或本机回环 `localhost/127.0.0.1`；外部后端须在设置中心显式保存）
 4. **本地自动回退**：访问宿主为 `localhost` 或 `127.0.0.1` 时，自动尝试回退连接 `http://127.0.0.1:8000`
 
 > 建议：若部署公网，把后端反向代理到 `https://api.你的域名`（Nginx 配置见下），前端部署时在 `index.html` 顶部加一句：

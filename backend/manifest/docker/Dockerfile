@@ -18,10 +18,10 @@ RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /app
 COPY --from=builder /app/main .
-# 复制配置文件（兼容 config.yaml 或 config.example.yaml）
+# 复制配置文件（优先保留本地 config.yaml；若不存在则由模板自动生成）
 COPY manifest/config/config*.yaml manifest/config/
 COPY workflows workflows/
-RUN if [ ! -f manifest/config/config.yaml ]; then cp manifest/config/config.example.yaml manifest/config/config.yaml; fi
+RUN [ -f manifest/config/config.yaml ] || cp manifest/config/config.example.yaml manifest/config/config.yaml
 
 EXPOSE 8000
 CMD ["./main"]
