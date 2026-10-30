@@ -170,6 +170,13 @@ footer a:hover{color:#fff;text-decoration:underline}
 .fit-photo{position:relative;margin-bottom:8px;min-height:140px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#17191e;display:flex;align-items:center;justify-content:center}
 .fit-photo img{width:100%;max-height:300px;object-fit:contain;display:block}
 .fit-photo .rm{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;border:0;background:rgba(13,15,18,.75);color:#fff;font-size:16px;cursor:pointer;line-height:1}
+/* 压缩选项开关 */
+.step-compress-row{margin-top:12px;padding:10px 14px;background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:10px}
+.step-compress-toggle{display:flex;align-items:flex-start;gap:10px;cursor:pointer;user-select:none}
+.step-compress-toggle input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--ac);cursor:pointer;flex:0 0 auto}
+.step-compress-copy{display:grid;gap:2px}
+.step-compress-copy strong{font-size:13px;color:var(--tx);font-weight:600}
+.step-compress-copy small{font-size:11px;color:var(--tx3);line-height:1.45}
 /* 服装网格 */
 .garment-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;max-height:340px;overflow-y:auto}
 .garment-list .g{position:relative;aspect-ratio:2/3;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#e9e9e7;transition:opacity .18s,filter .18s,border-color .18s,box-shadow .18s,transform .18s}
@@ -445,13 +452,22 @@ footer a:hover{color:#fff;text-decoration:underline}
           <label class="upload-zone" id="fitUpload" for="fitFile">
             <span class="ico">📷</span>
             <span data-i18n="fitUploadBtn">点击上传照片</span>
-            <small data-i18n="fitUploadHint">支持 JPG / PNG</small>
+            <small data-i18n="fitUploadHint">支持 JPG / PNG / WebP（最大 8MB，自动压缩）</small>
           </label>
-          <input type="file" id="fitFile" accept="image/*" hidden>
+          <input type="file" id="fitFile" accept="image/jpeg,image/png,image/webp" hidden>
           <div class="fit-photo" id="fitPhotoWrap" hidden>
             <img id="fitPhotoPreview" alt="">
             <button type="button" class="rm" id="fitPhotoRm" aria-label="移除照片">×</button>
           </div>
+        </div>
+        <div class="step-compress-row">
+          <label class="step-compress-toggle" for="fitCompress">
+            <input type="checkbox" id="fitCompress" checked>
+            <span class="step-compress-copy">
+              <strong data-i18n="fitCompressLabel">上传前压缩（推荐，防 413 / 更快）</strong>
+              <small data-i18n="fitCompressHint">最长边缩至 1280px，有效规避第三方模型中转网关 1MB 限制；未勾选时采用高清模式（最大 2048px）。</small>
+            </span>
+          </label>
         </div>
       </section>
 
@@ -547,6 +563,14 @@ footer a:hover{color:#fff;text-decoration:underline}
           <span data-i18n="settingsBackendUrl">后端 API 地址</span>
           <input id="settingsBackendUrl" type="url" inputmode="url" autocomplete="url" placeholder="http://127.0.0.1:8000">
           <small data-i18n="settingsBackendHelp">留空时使用页面预设、?tryon= 参数或本地默认地址。</small>
+        </label>
+        <label class="settings-field" id="settingsBackendTokenField">
+          <span data-i18n="settingsBackendToken">后端访问 Token</span>
+          <span class="settings-password">
+            <input id="settingsBackendToken" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer Token (32位以上)" data-i18n-placeholder="settingsBackendTokenPlaceholder">
+            <button type="button" id="settingsTokenToggle" data-i18n="settingsShowKey">显示</button>
+          </span>
+          <small data-i18n="settingsBackendTokenHelp">服务端开启接口访问鉴权时必填（与模型 API Key 区分）。仅用于本站请求鉴权，不上传给第三方。</small>
         </label>
       </section>
 
@@ -678,7 +702,8 @@ const I18N = {
     fitBack: '返回图库', fitTitle: 'AI 试穿',
     fitHint: '上传头像 → 选衣服 → 选模型 → 生成效果',
     fitEmptyTitle: '先上传一张人像照片', fitEmptySub: '也可以先在右侧选衣服摆上去',
-    fitPhotoTitle: '上传你的照片', fitUploadBtn: '点击上传照片', fitUploadHint: '支持 JPG / PNG',
+    fitPhotoTitle: '上传你的照片', fitUploadBtn: '点击上传照片', fitUploadHint: '支持 JPG / PNG / WebP（单图最大 8MB，自动压缩）',
+    fitCompressLabel: '上传前压缩（推荐，防 413 / 更快）', fitCompressHint: '最长边缩至 1280px，有效规避第三方模型中转网关 1MB 限制；未勾选时采用高清模式（最大 2048px）。',
     fitBgNone: '无背景', fitBgWhite: '白底',
     fitGarmentTitle: '选择一件服装', fitSearchPh: '搜索服装…', fitRandom: '随机',
     fitLayerTitle: '已添加的搭配层', fitClear: '清空', fitExport: '导出搭配图',
@@ -730,6 +755,15 @@ const I18N = {
     settingsBackendOutdated: '当前试穿后端版本过旧，未识别个人模型配置。请重新编译并重启后端；Docker 请执行 docker compose up -d --build。',
     settingsServerPreset: '服务器预设模型', settingsPersonal: '个人模型配置',
     settingsServerNote: 'Key 与模型参数由试穿后端管理', settingsPersonalNote: 'Key 仅随本次请求临时发送，后端不保存', settingsComfyNote: '固定工作流与模型路径仅由本机后端管理',
+    settingsBackendToken: '后端访问 Token', settingsBackendTokenPlaceholder: 'Bearer Token (32位以上)',
+    settingsBackendTokenHelp: '服务端开启接口访问鉴权时必填（与模型 API Key 区分）。仅用于本站请求鉴权，不上传给第三方。',
+    imageCompressing: '正在压缩处理图片…',
+    errAuthRequired: '请在设置中心填写后端访问 Token', errAuthInvalid: '后端访问 Token 无效',
+    errOriginNotAllowed: '当前页面来源不允许访问后端', errRequestTooLarge: '上传内容过大，请压缩图片后重试',
+    errInvalidImageBase64: '图片数据损坏，请重新选择图片', errUnsupportedImageType: '仅支持 JPEG、PNG 和 WebP 格式图片',
+    errImageFileTooLarge: '图片文件过大，请压缩后重试', errImageDimensionsInvalid: '图片尺寸不符合要求（宽、高需在 256~8192 像素之间）',
+    errImagePixelLimitExceeded: '图片像素过高，请缩小后重试（最大 2000 万像素）',
+    errRateLimited: '请求过于频繁，请稍后重试', errDailyQuotaExceeded: '今日生成额度已用完', errConcurrencyLimited: '当前生成任务较多，请稍后重试',
     historyTitle: '生成记录', historySubtitle: '生成结果仅保存在当前浏览器，不会上传或跨设备同步。',
     historyLocalOnly: '使用浏览器本机存储；清除浏览器站点数据后，记录也会被删除。',
     historyEmpty: '还没有生成记录', historyEmptyHint: '完成一次 AI 换装后，结果会自动保存在这里。',
@@ -781,7 +815,8 @@ const I18N = {
     fitBack: 'Back to gallery', fitTitle: 'AI Try-On',
     fitHint: 'Upload photo → pick garment → choose model → generate',
     fitEmptyTitle: 'Upload a person photo first', fitEmptySub: 'Or pick outfits on the right to start',
-    fitPhotoTitle: 'Upload your photo', fitUploadBtn: 'Click to upload', fitUploadHint: 'JPG / PNG supported',
+    fitPhotoTitle: 'Upload your photo', fitUploadBtn: 'Click to upload', fitUploadHint: 'JPG / PNG / WebP supported (max 8MB, auto-compressed)',
+    fitCompressLabel: 'Compress before upload (Recommended, avoids 413 / Faster)', fitCompressHint: 'Scales max edge to 1280px to bypass 1MB proxy limits; uncheck for HD mode (max 2048px).',
     fitBgNone: 'No background', fitBgWhite: 'White',
     fitGarmentTitle: 'Choose a garment', fitSearchPh: 'Search outfits…', fitRandom: 'Random',
     fitLayerTitle: 'Added layers', fitClear: 'Clear', fitExport: 'Export look',
@@ -833,6 +868,15 @@ const I18N = {
     settingsBackendOutdated: 'The try-on backend is outdated and did not recognize the personal model configuration. Rebuild and restart it; for Docker, run docker compose up -d --build.',
     settingsServerPreset: 'Server preset', settingsPersonal: 'Personal model',
     settingsServerNote: 'The backend manages the key and model parameters', settingsPersonalNote: 'The key is sent for this request only and is not stored by the backend', settingsComfyNote: 'The fixed workflow and model paths are managed only by the local backend',
+    settingsBackendToken: 'Backend access token', settingsBackendTokenPlaceholder: 'Bearer Token (at least 32 chars)',
+    settingsBackendTokenHelp: 'Required when the backend enables access authorization (distinct from model API Key). Used only for authorizing requests to your backend.',
+    imageCompressing: 'Compressing and processing image…',
+    errAuthRequired: 'Please enter the backend access token in Settings', errAuthInvalid: 'Invalid backend access token',
+    errOriginNotAllowed: 'Current page origin is not allowed to access backend', errRequestTooLarge: 'Upload payload too large, please compress the image and retry',
+    errInvalidImageBase64: 'Image data corrupted, please reselect the image', errUnsupportedImageType: 'Only JPEG, PNG, and WebP images are supported',
+    errImageFileTooLarge: 'Image file too large, please compress and retry', errImageDimensionsInvalid: 'Image dimensions invalid (width and height must be between 256 and 8192 px)',
+    errImagePixelLimitExceeded: 'Image pixel limit exceeded (maximum 20 million pixels)',
+    errRateLimited: 'Too many requests, please try again later', errDailyQuotaExceeded: 'Daily generation quota exceeded', errConcurrencyLimited: 'High generation concurrency, please try again later',
     historyTitle: 'Generation history', historySubtitle: 'Results stay in this browser and are never uploaded or synced across devices.',
     historyLocalOnly: 'Stored locally by your browser. Clearing this site’s browser data will also remove these records.',
     historyEmpty: 'No generation history yet', historyEmptyHint: 'Completed AI try-on results will be saved here automatically.',
@@ -1110,7 +1154,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   // ===== 设置中心（仅保存在当前浏览器） =====
   const SETTINGS_KEY = 'paipiange.tryon.settings.v1';
   const SETTINGS_DEFAULTS = {
-    backendUrl: '', useCustom: false, provider: 'gemini',
+    backendUrl: '', backendToken: '', useCustom: false, provider: 'gemini',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     apiKey: '', model: 'gemini-3.1-flash-image'
   };
@@ -1123,6 +1167,8 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   const settingsEl = document.getElementById('aiSettings');
   const settingsForm = document.getElementById('aiSettingsForm');
   const settingsBackendUrl = document.getElementById('settingsBackendUrl');
+  const settingsBackendToken = document.getElementById('settingsBackendToken');
+  const settingsTokenToggle = document.getElementById('settingsTokenToggle');
   const settingsUseCustom = document.getElementById('settingsUseCustom');
   const settingsCustomFields = document.getElementById('settingsCustomFields');
   const settingsProvider = document.getElementById('settingsProvider');
@@ -1345,6 +1391,9 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   }
   function fillSettingsForm(){
     settingsBackendUrl.value = tryonSettings.backendUrl || '';
+    settingsBackendToken.value = tryonSettings.backendToken || '';
+    settingsBackendToken.type = 'password';
+    settingsTokenToggle.textContent = t('settingsShowKey');
     settingsUseCustom.checked = !!tryonSettings.useCustom;
     settingsProvider.value = tryonSettings.provider || 'gemini';
     settingsBaseUrl.value = tryonSettings.baseUrl || '';
@@ -1388,6 +1437,8 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   }
   function closeSettings(){
     settingsEl.hidden = true;
+    settingsBackendToken.type = 'password';
+    settingsApiKey.type = 'password';
     if(settingsReturnFocus && settingsReturnFocus.focus) settingsReturnFocus.focus();
   }
   function openServiceDialog(trigger){
@@ -1508,6 +1559,11 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     settingsApiKey.type = showing ? 'password' : 'text';
     settingsKeyToggle.textContent = t(showing ? 'settingsShowKey' : 'settingsHideKey');
   });
+  settingsTokenToggle.addEventListener('click', ()=>{
+    const showing = settingsBackendToken.type === 'text';
+    settingsBackendToken.type = showing ? 'password' : 'text';
+    settingsTokenToggle.textContent = t(showing ? 'settingsShowKey' : 'settingsHideKey');
+  });
   settingsComfyTest.addEventListener('click', async()=>{
     const backendUrl = trimUrl(settingsBackendUrl.value) || 'http://127.0.0.1:8000';
     if(!validHttpUrl(backendUrl)){ setSettingsMessage(t('settingsInvalidUrl')); return; }
@@ -1541,6 +1597,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
 
     tryonSettings = {
       backendUrl,
+      backendToken: settingsBackendToken.value.trim(),
       useCustom,
       provider: settingsProvider.value,
       baseUrl,
@@ -1590,9 +1647,29 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   // ===== 上传头像 =====
   const photoWrap = document.getElementById('fitPhotoWrap');
   const photoPreview = document.getElementById('fitPhotoPreview');
+  const fitCompressEl = document.getElementById('fitCompress');
+  const COMPRESS_STORAGE_KEY = 'nvzhuang_compress_image';
+  if(fitCompressEl){
+    const savedCompress = localStorage.getItem(COMPRESS_STORAGE_KEY);
+    if(savedCompress !== null){
+      fitCompressEl.checked = savedCompress === '1';
+    }
+    fitCompressEl.addEventListener('change', ()=>{
+      localStorage.setItem(COMPRESS_STORAGE_KEY, fitCompressEl.checked ? '1' : '0');
+    });
+  }
 
   document.getElementById('fitFile').addEventListener('change', e=>{
     const f = e.target.files[0]; if(!f) return;
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    if(f.type && !allowedMimes.includes(f.type.toLowerCase())){
+      showHint(t('errUnsupportedImageType'));
+      e.target.value = '';
+      return;
+    }
+    if(f.size > 12 * 1024 * 1024){
+      showHint(t('imageCompressing'));
+    }
     const url = URL.createObjectURL(f);
     const img = new Image();
     img.onload = () => {
@@ -1600,6 +1677,11 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       photoPreview.src = url;
       photoWrap.hidden = false;
       e.target.value='';
+    };
+    img.onerror = () => {
+      showHint(t('errInvalidImageBase64'));
+      URL.revokeObjectURL(url);
+      e.target.value = '';
     };
     img.src = url;
   });
@@ -1696,6 +1778,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     refreshConfigUI();
     if(!historyEl.hidden) renderHistory();
     settingsKeyToggle.textContent = t(settingsApiKey.type === 'text' ? 'settingsHideKey' : 'settingsShowKey');
+    settingsTokenToggle.textContent = t(settingsBackendToken.type === 'text' ? 'settingsHideKey' : 'settingsShowKey');
     if(!settingsEl.hidden) refreshSettingsProviderFields();
   };
 
@@ -1721,22 +1804,135 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   let aiResultB64 = '';
   aiModel.addEventListener('change', refreshConfigUI);
 
-  // 图片 URL → base64（用于提交给人像）
-  function urlToB64(src){
+  // 检测浏览器 Canvas 是否支持 WebP 编码
+  let isWebpSupported = null;
+  function checkWebpSupport(){
+    if(isWebpSupported !== null) return isWebpSupported;
+    try{
+      const c = document.createElement('canvas');
+      c.width = 1; c.height = 1;
+      isWebpSupported = c.toDataURL('image/webp').startsWith('data:image/webp');
+    }catch(_){
+      isWebpSupported = false;
+    }
+    return isWebpSupported;
+  }
+
+  function getBase64ByteLength(b64){
+    let padding = 0;
+    if(b64.endsWith('==')) padding = 2;
+    else if(b64.endsWith('=')) padding = 1;
+    return Math.floor((b64.length * 3) / 4) - padding;
+  }
+
+  function loadImageElement(src){
     return new Promise((resolve, reject)=>{
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.onload = ()=>{
-        try{
-          const c = document.createElement('canvas');
-          c.width = img.naturalWidth; c.height = img.naturalHeight;
-          c.getContext('2d').drawImage(img, 0, 0);
-          resolve(c.toDataURL('image/png').split(',')[1]);
-        }catch(e){ reject(e); }
-      };
-      img.onerror = ()=>reject(new Error('image load failed'));
+      img.onload = ()=>resolve(img);
+      img.onerror = ()=>reject(new Error('INVALID_IMAGE_BASE64'));
       img.src = src;
     });
+  }
+
+  // 前端图片压缩与尺寸校验：开启压缩时最长边 1280（规避上游 1MB 限制），未勾选时最长边 2048，超 8MB 阶梯压缩
+  async function prepareTryonImage(source, isCompressed = true){
+    const img = await loadImageElement(source);
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if(!w || !h || w < 256 || h < 256 || w > 8192 || h > 8192){
+      throw new Error('IMAGE_DIMENSIONS_INVALID');
+    }
+    if(w * h > 20000000){
+      throw new Error('IMAGE_PIXEL_LIMIT_EXCEEDED');
+    }
+
+    const maxAllowedDim = isCompressed ? 1280 : 2048;
+    let targetW = w;
+    let targetH = h;
+    const maxDim = Math.max(w, h);
+    if(maxDim > maxAllowedDim){
+      const scale = maxAllowedDim / maxDim;
+      targetW = Math.max(1, Math.round(w * scale));
+      targetH = Math.max(1, Math.round(h * scale));
+    }
+
+    if(targetW < 256 || targetH < 256 || targetW > 8192 || targetH > 8192){
+      throw new Error('IMAGE_DIMENSIONS_INVALID');
+    }
+    if(targetW * targetH > 20000000){
+      throw new Error('IMAGE_PIXEL_LIMIT_EXCEEDED');
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    if(!ctx) throw new Error('canvas context unavailable');
+
+    const isWebp = checkWebpSupport();
+    const mimeType = isWebp ? 'image/webp' : 'image/jpeg';
+    if(!isWebp){
+      // JPEG 不支持透明度通道，铺白底防止黑底
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, targetW, targetH);
+    }
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+
+    const MAX_BYTES = 8 * 1024 * 1024; // 8 MiB
+    const qualities = isCompressed ? [0.85, 0.80, 0.75, 0.65] : [0.92, 0.90, 0.85, 0.75];
+    let finalB64 = '';
+
+    for(let i = 0; i < qualities.length; i++){
+      const q = qualities[i];
+      const dataUrl = canvas.toDataURL(mimeType, q);
+      const commaIdx = dataUrl.indexOf(',');
+      const b64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+      const bytes = getBase64ByteLength(b64);
+      if(bytes <= MAX_BYTES){
+        finalB64 = b64;
+        break;
+      }
+    }
+
+    if(!finalB64){
+      throw new Error('IMAGE_FILE_TOO_LARGE');
+    }
+    return finalB64;
+  }
+
+  // 映射服务端返回的标准业务错误码与 HTTP 异常
+  function getErrorMessageFromResponse(resp, data){
+    const errCode = (data && data.data && data.data.error_code) || '';
+    const bizCode = (data && typeof data.code === 'number') ? data.code : (resp ? resp.status : 0);
+
+    if(errCode === 'AUTH_REQUIRED' || bizCode === 40101) return { code: 'AUTH_REQUIRED', text: t('errAuthRequired') };
+    if(errCode === 'AUTH_INVALID' || bizCode === 40102) return { code: 'AUTH_INVALID', text: t('errAuthInvalid') };
+    if(errCode === 'ORIGIN_NOT_ALLOWED' || bizCode === 40301) return { code: 'ORIGIN_NOT_ALLOWED', text: t('errOriginNotAllowed') };
+    if(errCode === 'REQUEST_TOO_LARGE' || bizCode === 41301 || bizCode === 413) return { code: 'REQUEST_TOO_LARGE', text: t('errRequestTooLarge') };
+    if(errCode === 'INVALID_IMAGE_BASE64' || bizCode === 42201) return { code: 'INVALID_IMAGE_BASE64', text: t('errInvalidImageBase64') };
+    if(errCode === 'UNSUPPORTED_IMAGE_TYPE' || bizCode === 42202) return { code: 'UNSUPPORTED_IMAGE_TYPE', text: t('errUnsupportedImageType') };
+    if(errCode === 'IMAGE_FILE_TOO_LARGE' || bizCode === 42203) return { code: 'IMAGE_FILE_TOO_LARGE', text: t('errImageFileTooLarge') };
+    if(errCode === 'IMAGE_DIMENSIONS_INVALID' || bizCode === 42204) return { code: 'IMAGE_DIMENSIONS_INVALID', text: t('errImageDimensionsInvalid') };
+    if(errCode === 'IMAGE_PIXEL_LIMIT_EXCEEDED' || bizCode === 42205) return { code: 'IMAGE_PIXEL_LIMIT_EXCEEDED', text: t('errImagePixelLimitExceeded') };
+    if(errCode === 'RATE_LIMITED' || bizCode === 42901) return { code: 'RATE_LIMITED', text: t('errRateLimited') };
+    if(errCode === 'DAILY_QUOTA_EXCEEDED' || bizCode === 42902) return { code: 'DAILY_QUOTA_EXCEEDED', text: t('errDailyQuotaExceeded') };
+    if(errCode === 'CONCURRENCY_LIMITED' || bizCode === 42903) return { code: 'CONCURRENCY_LIMITED', text: t('errConcurrencyLimited') };
+
+    if(data && data.message){
+      if(tryonSettings.useCustom && /browser-custom/i.test(data.message)){
+        return { code: '', text: t('settingsBackendOutdated') };
+      }
+      return { code: '', text: t('aiFailed') + '：' + data.message };
+    }
+    return { code: '', text: t('aiFailed') };
+  }
+
+  // 兼容老调用（如有）
+  function urlToB64(src){
+    const shouldCompress = fitCompressEl ? fitCompressEl.checked : true;
+    return prepareTryonImage(src, shouldCompress);
   }
 
   function blobToPng(blob){
@@ -1848,8 +2044,21 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       showHint(t('aiGeneratingComfy'));
     }
     try{
-      const personB64 = await urlToB64(personSrc);
-      const garmentB64 = await urlToB64('assets/'+pickedGarment.画像);
+      let personB64, garmentB64;
+      const shouldCompress = fitCompressEl ? fitCompressEl.checked : true;
+      try{
+        personB64 = await prepareTryonImage(personSrc, shouldCompress);
+        garmentB64 = await prepareTryonImage('assets/'+pickedGarment.画像, shouldCompress);
+      }catch(imgErr){
+        setGenerating(false);
+        const code = imgErr && imgErr.message;
+        if(code === 'IMAGE_DIMENSIONS_INVALID') showHint(t('errImageDimensionsInvalid'));
+        else if(code === 'IMAGE_PIXEL_LIMIT_EXCEEDED') showHint(t('errImagePixelLimitExceeded'));
+        else if(code === 'IMAGE_FILE_TOO_LARGE') showHint(t('errImageFileTooLarge'));
+        else if(code === 'UNSUPPORTED_IMAGE_TYPE') showHint(t('errUnsupportedImageType'));
+        else showHint(t('errInvalidImageBase64'));
+        return;
+      }
 
       const payload = {
         person_image: personB64,
@@ -1868,21 +2077,31 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
         };
       }
 
+      const headers = {'Content-Type':'application/json'};
+      let token = tryonSettings.backendToken ? tryonSettings.backendToken.trim() : '';
+      if(token.toLowerCase().startsWith('bearer ')) token = token.slice(7).trim();
+      if(token){
+        headers['Authorization'] = 'Bearer ' + token;
+      }
+
       const resp = await fetch(aiApi + '/tryon', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers,
         body: JSON.stringify(payload),
       });
 
-      const data = await resp.json();
+      const data = await resp.json().catch(()=>null);
       // 后端用 MiddlewareHandlerResponse 包裹：{code, message, data:{image, model, prompt}}
       const ok = resp.ok && data && data.code === 0 && data.data && data.data.image;
       if(!ok){
-        const msg = (data && data.message) ? data.message : t('aiFailed');
-        const displayMsg = tryonSettings.useCustom && /browser-custom/i.test(msg)
-          ? t('settingsBackendOutdated')
-          : t('aiFailed') + (msg ? '：'+msg : '');
-        showHint(displayMsg);
+        const errInfo = getErrorMessageFromResponse(resp, data);
+        showHint(errInfo.text);
+        if(errInfo.code === 'AUTH_REQUIRED'){
+          openSettings();
+        } else if(errInfo.code === 'REQUEST_TOO_LARGE' && fitCompressEl && !fitCompressEl.checked){
+          fitCompressEl.checked = true;
+          localStorage.setItem(COMPRESS_STORAGE_KEY, '1');
+        }
         return;
       }
 

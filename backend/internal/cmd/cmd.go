@@ -9,6 +9,9 @@ import (
 
 	"backend/internal/controller/hello"
 	"backend/internal/controller/tryon"
+	"backend/internal/imagevalidate"
+	"backend/internal/middleware"
+	"backend/internal/security"
 )
 
 var (
@@ -17,10 +20,27 @@ var (
 		Usage: "main",
 		Brief: "start http server",
 		Func: func(ctx context.Context, parser *gcmd.Parser) (err error) {
+			secService, err := security.InitService(ctx)
+			if err != nil {
+				return err
+			}
+
+			imgLimits := imagevalidate.LoadImageLimits(ctx)
+			corsMw := middleware.NewCORSMiddleware(secService.Config)
+			bodyLimitMw := middleware.NewBodyLimitMiddleware(imgLimits.MaxRequestBodyBytes)
+			authMw := middleware.NewAuthMiddleware(secService.TokenStore)
+			rateLimitMw := middleware.NewRateLimitMiddleware(secService.RateLimiter)
+
 			s := g.Server()
 			s.Group("/", func(group *ghttp.RouterGroup) {
-				group.Middleware(ghttp.MiddlewareHandlerResponse)
-				group.Middleware(corsMiddleware)
+				group.Middleware(
+					middleware.RequestID,
+					ghttp.MiddlewareHandlerResponse,
+					corsMw.Handler,
+					bodyLimitMw.Handler,
+					authMw.Handler,
+					rateLimitMw.Handler,
+				)
 				group.Bind(
 					hello.NewV1(),
 					tryon.NewV1(),
@@ -31,15 +51,3 @@ var (
 		},
 	}
 )
-
-// corsMiddleware 跨域中间件，允许前端页面跨域调用
-func corsMiddleware(r *ghttp.Request) {
-	// 允许 HTTPS 页面在用户明确配置本机后端时完成 Private Network Access 预检。
-	// 后端仍应只在可信环境运行；ComfyUI 地址与工作流不能由浏览器请求覆盖。
-	if r.Header.Get("Access-Control-Request-Private-Network") == "true" {
-		r.Response.Header().Set("Access-Control-Allow-Private-Network", "true")
-	}
-	// CORSDefault 会直接完成 OPTIONS 预检，因此 PNA 响应头必须先写入。
-	r.Response.CORSDefault()
-	r.Middleware.Next()
-}

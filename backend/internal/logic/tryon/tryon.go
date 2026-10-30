@@ -2,9 +2,12 @@ package tryon
 
 import (
 	"context"
+	"encoding/base64"
 	"strings"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+
+	"backend/internal/imagevalidate"
 )
 
 // DoTryon 执行换装：选择模型 → 构建提示词 → 调用生成 → 返回结果
@@ -63,6 +66,50 @@ func DoTryonWithClientConfig(ctx context.Context, personB64, garmentB64, model, 
 	result, err := gen.Generate(ctx, personB64, garmentB64, promptStr, size)
 	if err != nil {
 		// 不记录原始错误：网络错误可能包含用户自定义 Base URL，供应商响应也可能含敏感信息。
+		return "", "", "", gerror.Wrap(err, "换装生成失败，请稍后重试")
+	}
+
+	return result, gen.Name(), promptStr, nil
+}
+
+// DoTryonWithValidatedImages 使用已完成安全校验的图片结构执行换装
+func DoTryonWithValidatedImages(ctx context.Context, personImg, garmentImg *imagevalidate.ValidatedImage, model, size, lang string, clientConfig *ModelConfig) (resultB64, usedModel, usedPrompt string, err error) {
+	if personImg == nil || len(personImg.Data) == 0 {
+		return "", "", "", gerror.New("人像照片不能为空")
+	}
+	if garmentImg == nil || len(garmentImg.Data) == 0 {
+		return "", "", "", gerror.New("服装图不能为空")
+	}
+
+	personB64 := base64.StdEncoding.EncodeToString(personImg.Data)
+	garmentB64 := base64.StdEncoding.EncodeToString(garmentImg.Data)
+
+	if model == "" {
+		model = "gemini"
+	}
+
+	var gen ImageGenerator
+	if clientConfig != nil {
+		gen, err = NewGeneratorFromClientConfig(clientConfig)
+	} else {
+		gen, err = NewGenerator(ctx, model)
+	}
+	if err != nil {
+		return "", "", "", err
+	}
+
+	var promptStr string
+	isGemini := (clientConfig != nil && strings.EqualFold(clientConfig.Provider, "gemini")) || gen.Name() == "gemini"
+	if isGPTImageModel(model, clientConfig, gen.Name()) {
+		promptStr = BuildGPTSafety(lang)
+	} else if isGemini {
+		promptStr = BuildGemini(lang)
+	} else {
+		promptStr = BuildDefault(lang)
+	}
+
+	result, err := gen.Generate(ctx, personB64, garmentB64, promptStr, size)
+	if err != nil {
 		return "", "", "", gerror.Wrap(err, "换装生成失败，请稍后重试")
 	}
 
