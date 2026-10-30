@@ -61,16 +61,24 @@ docker run -d --name costume-tryon -p 8000:8000 \
 
 ## ComfyUI 本地模式
 
-第一阶段使用服务端固定工作流 `workflows/comfyui_h3_ref2va_still_api.json`。后端会上传人物图和服装图、提交 `/prompt`，通过 `/history/{prompt_id}` 轮询状态，再从 `/view` 读取经过 README 测试图验证的早期合成帧 PNG。
+后端支持两种服务端固定工作流，**默认 Qwen 优先，同时兼容保留 H3**：
+- **Qwen-Image-Edit-2511（优先默认）**：`workflows/comfyui_qwen_image_edit_2511_api.json`。基于 Qwen-Image-Edit-2511-Int8 与 4-step Lightning LoRA，单次 4 步极速生成，语义换装保真度更高。
+- **MiniMax H3（兼容保留）**：`workflows/comfyui_h3_ref2va_still_api.json`。基于 H3 Ref2VA 视频模型并抽取第 31 帧定格。
+
+系统在调用 `comfyui` 时会自动检测可用状态：优先选择 `qwen-image-edit-2511`；如 Qwen 模型尚未就绪，自动平滑回退至 `h3-ref2va-still`；也可以通过 `comfyui-qwen` 或 `comfyui-h3` 显式指定。
 
 1. 启动本机 ComfyUI，默认地址为 `http://127.0.0.1:8188`。
-2. 确认固定工作流引用的 H3、Qwen3-VL、ClipProj、LoRA、视频 VAE 和音频 VAE 已放入 ComfyUI 对应模型目录，并已安装工作流所需自定义节点。
-3. 如节点 ID 或模型文件名不同，只修改本机忽略提交的 `manifest/config/config.yaml` 和固定工作流 JSON；不要把绝对路径、个人目录或密钥写入仓库。
-4. 启动本后端，在网页设置中心启用“使用我自己的模型配置”，选择“ComfyUI 本地”，点击“测试连接”后保存。
+2. 确认工作流所需模型已放入 ComfyUI 对应模型目录：
+   - **Qwen-Image-Edit**：
+     - `models/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors`
+     - `models/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors`
+     - `models/vae/qwen_image_vae.safetensors`
+     - `models/loras/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors`
+   - **MiniMax H3**：
+     - H3、Qwen3-VL、ClipProj、LoRA、视频 VAE 和音频 VAE。
+3. 启动本后端，在网页设置中心启用“使用我自己的模型配置”，选择“ComfyUI 本地”，点击“测试连接”后保存。
 
-默认节点映射：人物图 `16`、服装图 `17`、提示词 `6`、随机种子 `10`、输出 `19`。默认使用经过 README 测试图验证的固定种子 `246813579`，如需每次随机可在本机配置中设为 `-1`。浏览器不能覆盖 ComfyUI 地址、工作流路径或节点 ID，避免公网后端被请求引导访问任意内网服务。
-
-连接检查接口：`GET /comfyui/health`。该接口只检查 ComfyUI API、固定工作流和节点，不上传图片，也不执行生成。
+连接检查接口：`GET /comfyui/health`。该接口只检查 ComfyUI API、固定工作流以及节点与模型可用性，不上传图片，也不执行生成。
 
 ## 配置 API Key
 

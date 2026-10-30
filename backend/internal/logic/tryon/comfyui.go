@@ -135,8 +135,41 @@ func (c *ComfyUI) Health(ctx context.Context) error {
 		}
 		classType, _ := item["class_type"].(string)
 		if classType != "" {
-			if _, ok := available[classType]; !ok {
-				return fmt.Errorf("ComfyUI 缺少固定工作流节点")
+			rawNodeInfo, ok := available[classType]
+			if !ok {
+				return fmt.Errorf("ComfyUI 缺少固定工作流节点: %s", classType)
+			}
+			// 校验模型输入文件是否存在于 ComfyUI 可用模型列表中
+			if inputs, ok := item["inputs"].(map[string]interface{}); ok {
+				var nodeInfo struct {
+					Input struct {
+						Required map[string]interface{} `json:"required"`
+					} `json:"input"`
+				}
+				if err := json.Unmarshal(rawNodeInfo, &nodeInfo); err == nil && nodeInfo.Input.Required != nil {
+					for paramName, paramVal := range inputs {
+						paramStr, isStr := paramVal.(string)
+						if !isStr || strings.HasPrefix(paramStr, "__") {
+							continue
+						}
+						if fieldMeta, ok := nodeInfo.Input.Required[paramName]; ok {
+							if fieldArr, ok := fieldMeta.([]interface{}); ok && len(fieldArr) > 0 {
+								if options, ok := fieldArr[0].([]interface{}); ok && len(options) > 0 {
+									found := false
+									for _, opt := range options {
+										if optStr, ok := opt.(string); ok && optStr == paramStr {
+											found = true
+											break
+										}
+									}
+									if !found {
+										return fmt.Errorf("ComfyUI 缺少模型文件: %s", paramStr)
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -177,7 +210,7 @@ func (c *ComfyUI) Generate(ctx context.Context, personB64, garmentB64, prompt, s
 	if err := setComfyInput(workflow, c.garmentNode, "image", garmentName); err != nil {
 		return "", err
 	}
-	if err := setComfyInput(workflow, c.promptNode, "prompt", buildComfyTryonPrompt(prompt)); err != nil {
+	if err := setComfyInput(workflow, c.promptNode, "prompt", c.buildPrompt(prompt)); err != nil {
 		return "", err
 	}
 	if c.seedNode != "" {
@@ -185,7 +218,7 @@ func (c *ComfyUI) Generate(ctx context.Context, personB64, garmentB64, prompt, s
 		if seed < 0 {
 			seed = time.Now().UnixNano() & 0x7fffffffffffffff
 		}
-		if err := setComfyInput(workflow, c.seedNode, "noise_seed", seed); err != nil {
+		if err := setComfySeed(workflow, c.seedNode, seed); err != nil {
 			return "", err
 		}
 	}
@@ -369,7 +402,12 @@ func (c *ComfyUI) loadWorkflow() (map[string]interface{}, error) {
 	}
 	candidates := []string{path}
 	if !filepath.IsAbs(path) {
-		candidates = append(candidates, filepath.Join("backend", path))
+		candidates = append(candidates,
+			filepath.Join("backend", path),
+			filepath.Join("..", path),
+			filepath.Join("..", "..", path),
+			filepath.Join("..", "..", "..", path),
+		)
 	}
 	var data []byte
 	var err error
@@ -418,6 +456,43 @@ func setComfyInput(workflow map[string]interface{}, nodeID, field string, value 
 	return nil
 }
 
+func setComfySeed(workflow map[string]interface{}, nodeID string, seed int64) error {
+	rawNode, ok := workflow[nodeID]
+	if !ok {
+		return fmt.Errorf("ComfyUI 固定工作流节点不存在")
+	}
+	node, ok := rawNode.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("ComfyUI 固定工作流节点格式错误")
+	}
+	inputs, ok := node["inputs"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("ComfyUI 固定工作流输入格式错误")
+	}
+	if _, ok := inputs["seed"]; ok {
+		inputs["seed"] = seed
+		return nil
+	}
+	inputs["noise_seed"] = seed
+	return nil
+}
+
+func (c *ComfyUI) buildPrompt(prompt string) string {
+	if strings.Contains(strings.ToLower(c.model), "qwen") || strings.Contains(strings.ToLower(c.workflowPath), "qwen") {
+		return buildQwenTryonPrompt(prompt)
+	}
+	return buildComfyTryonPrompt(prompt)
+}
+
+func buildQwenTryonPrompt(extraPrompt string) string {
+	base := `Picture 1 is a photo of a person, and Picture 2 shows a garment. Replace the outfit worn by the person in Picture 1 with the exact garment from Picture 2. Keep the person's face, complete identity, hairstyle, facial expression, skin tone, body shape, posture, and the background from Picture 1 completely unchanged. Dress the person naturally in the garment from Picture 2, preserving the outfit's exact colors, patterns, neckline, sleeves, fabric texture, and structural details with realistic fit and lighting.`
+	extraPrompt = strings.TrimSpace(extraPrompt)
+	if extraPrompt != "" {
+		return base + " " + extraPrompt
+	}
+	return base
+}
+
 func buildComfyTryonPrompt(_ string) string {
 	// H3 Ref2VA 对固定分段格式的服从度高于通用图片模型提示词。这里不拼接
 	// Gemini/GPT 的长提示词，避免重复的“第一张/第二张”描述稀释引用角色。
@@ -448,9 +523,53 @@ func randomComfyID() string {
 	return fmt.Sprintf("%x", time.Now().UnixNano())
 }
 
+// resolveComfyUIConfig 解析 ComfyUI 模型配置。
+// 当 alias 为 "comfyui" 时，优先检测并选用 Qwen 模型（comfyui / comfyui-qwen）；
+// 若 Qwen 不可用但配置了 H3（comfyui-h3），则优雅降级到 H3。
+// 当 alias 为具体别名（如 comfyui-qwen 或 comfyui-h3）时，直接加载指定配置。
+func resolveComfyUIConfig(ctx context.Context, alias string) (*ModelConfig, error) {
+	aliasLower := strings.ToLower(strings.TrimSpace(alias))
+	if aliasLower != "comfyui" && aliasLower != "" {
+		return loadModelConfig(ctx, alias)
+	}
+
+	// 1. 尝试首选配置（默认为 comfyui 或 comfyui-qwen）
+	primaryCfg, primaryErr := loadModelConfig(ctx, "comfyui")
+	if primaryErr != nil {
+		primaryCfg, primaryErr = loadModelConfig(ctx, "comfyui-qwen")
+	}
+
+	if primaryErr == nil {
+		gen := NewComfyUI(primaryCfg)
+		checkCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		healthErr := gen.Health(checkCtx)
+		cancel()
+		if healthErr == nil {
+			return primaryCfg, nil
+		}
+	}
+
+	// 2. 若首选不可用，尝试 fallback 到 comfyui-h3
+	h3Cfg, h3Err := loadModelConfig(ctx, "comfyui-h3")
+	if h3Err == nil {
+		gen := NewComfyUI(h3Cfg)
+		checkCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		healthErr := gen.Health(checkCtx)
+		cancel()
+		if healthErr == nil {
+			return h3Cfg, nil
+		}
+	}
+
+	if primaryErr == nil {
+		return primaryCfg, nil
+	}
+	return nil, primaryErr
+}
+
 // CheckComfyUI 为设置中心提供不执行推理的连接检查。
 func CheckComfyUI(ctx context.Context) (string, error) {
-	cfg, err := loadModelConfig(ctx, "comfyui")
+	cfg, err := resolveComfyUIConfig(ctx, "comfyui")
 	if err != nil {
 		return "", err
 	}

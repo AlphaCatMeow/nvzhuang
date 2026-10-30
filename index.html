@@ -1118,7 +1118,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     gemini: {baseUrl:'https://generativelanguage.googleapis.com/v1beta', model:'gemini-3.1-flash-image'},
     openai: {baseUrl:'https://api.openai.com/v1', model:'gpt-image-2'},
     doubao: {baseUrl:'https://ark.cn-beijing.volces.com/api/v3', model:'doubao-seedream-3-0-t2i-250415'},
-    comfyui: {baseUrl:'http://127.0.0.1:8188', model:'h3-ref2va-still'}
+    comfyui: {baseUrl:'http://127.0.0.1:8188', model:'qwen-image-edit-2511'}
   };
   const settingsEl = document.getElementById('aiSettings');
   const settingsForm = document.getElementById('aiSettingsForm');
@@ -1519,7 +1519,10 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       const body = await resp.json();
       const result = body && body.data ? body.data : body;
       if(!resp.ok || !result || result.available !== true) throw new Error('unavailable');
-      setSettingsMessage(t('settingsComfyReady'), true);
+      if(result.model){
+        settingsModel.value = result.model;
+      }
+      setSettingsMessage(`${t('settingsComfyReady')} (${result.model || 'qwen-image-edit-2511'})`, true);
     }catch(_){
       setSettingsMessage(t('settingsComfyUnavailable'));
     }finally{

@@ -114,6 +114,13 @@ func loadLegacyConfig(ctx context.Context, alias string) *ModelConfig {
 
 // NewGenerator 根据模型别名创建适配器
 func NewGenerator(ctx context.Context, alias string) (ImageGenerator, error) {
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(alias)), "comfyui") {
+		cfg, err := resolveComfyUIConfig(ctx, alias)
+		if err != nil {
+			return nil, err
+		}
+		return newGeneratorFromConfig(cfg)
+	}
 	cfg, err := loadModelConfig(ctx, alias)
 	if err != nil {
 		return nil, err

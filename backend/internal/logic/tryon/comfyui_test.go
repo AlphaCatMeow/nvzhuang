@@ -166,6 +166,124 @@ func TestComfyWorkflowReturnsEarlyCompositedFrame(t *testing.T) {
 	}
 }
 
+func TestQwenWorkflowStructure(t *testing.T) {
+	workflowData, err := os.ReadFile(filepath.Join("..", "..", "..", "workflows", "comfyui_qwen_image_edit_2511_api.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var workflow map[string]interface{}
+	if err := json.Unmarshal(workflowData, &workflow); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, requiredNode := range []string{"1", "4", "5", "6", "7", "8", "9", "11", "15", "17"} {
+		if _, ok := workflow[requiredNode]; !ok {
+			t.Fatalf("Qwen workflow missing required node %s", requiredNode)
+		}
+	}
+
+	unetNode := workflow["1"].(map[string]interface{})
+	if unetNode["class_type"] != "UNETLoader" {
+		t.Fatalf("expected UNETLoader on node 1, got %v", unetNode["class_type"])
+	}
+	loraNode := workflow["4"].(map[string]interface{})
+	if loraNode["class_type"] != "LoraLoaderModelOnly" {
+		t.Fatalf("expected LoraLoaderModelOnly on node 4, got %v", loraNode["class_type"])
+	}
+	promptNode := workflow["11"].(map[string]interface{})
+	if promptNode["class_type"] != "TextEncodeQwenImageEditPlus" {
+		t.Fatalf("expected TextEncodeQwenImageEditPlus on node 11, got %v", promptNode["class_type"])
+	}
+	samplerNode := workflow["15"].(map[string]interface{})
+	if samplerNode["class_type"] != "KSampler" {
+		t.Fatalf("expected KSampler on node 15, got %v", samplerNode["class_type"])
+	}
+}
+
+func TestQwenTryonPrompt(t *testing.T) {
+	prompt := buildQwenTryonPrompt("ensure fabric texture is silk")
+	for _, required := range []string{
+		"Picture 1 is a photo of a person",
+		"Picture 2 shows a garment",
+		"Replace the outfit worn by the person in Picture 1 with the exact garment from Picture 2",
+		"Keep the person's face, complete identity",
+		"ensure fabric texture is silk",
+	} {
+		if !strings.Contains(prompt, required) {
+			t.Fatalf("Qwen prompt missing required phrase %q", required)
+		}
+	}
+}
+
+func TestSetComfySeed(t *testing.T) {
+	workflow := map[string]interface{}{
+		"ksampler": map[string]interface{}{
+			"inputs": map[string]interface{}{
+				"seed": float64(0),
+			},
+		},
+		"noise": map[string]interface{}{
+			"inputs": map[string]interface{}{
+				"noise_seed": float64(0),
+			},
+		},
+	}
+	if err := setComfySeed(workflow, "ksampler", 123456); err != nil {
+		t.Fatal(err)
+	}
+	if workflow["ksampler"].(map[string]interface{})["inputs"].(map[string]interface{})["seed"] != int64(123456) {
+		t.Fatalf("failed to set seed on ksampler")
+	}
+
+	if err := setComfySeed(workflow, "noise", 654321); err != nil {
+		t.Fatal(err)
+	}
+	if workflow["noise"].(map[string]interface{})["inputs"].(map[string]interface{})["noise_seed"] != int64(654321) {
+		t.Fatalf("failed to set noise_seed on noise node")
+	}
+}
+
+func TestQwenLiveComfyUIHealth(t *testing.T) {
+	resp, err := http.Get("http://127.0.0.1:8188/system_stats")
+	if err != nil {
+		t.Skip("local ComfyUI not running on 8188")
+	}
+	defer resp.Body.Close()
+
+	adapter := NewComfyUI(&ModelConfig{
+		Name:         "comfyui-qwen",
+		Provider:     "comfyui",
+		BaseURL:      "http://127.0.0.1:8188",
+		Model:        "qwen-image-edit-2511",
+		WorkflowPath: filepath.Join("..", "..", "..", "workflows", "comfyui_qwen_image_edit_2511_api.json"),
+		PersonNode:   "7",
+		GarmentNode:  "8",
+		PromptNode:   "11",
+		SeedNode:     "15",
+		OutputNode:   "17",
+	})
+
+	if err := adapter.Health(context.Background()); err != nil {
+		t.Fatalf("Live ComfyUI Qwen health check failed: %v", err)
+	}
+}
+
+func TestCheckComfyUIQwenPriority(t *testing.T) {
+	resp, err := http.Get("http://127.0.0.1:8188/system_stats")
+	if err != nil {
+		t.Skip("local ComfyUI not running on 8188")
+	}
+	defer resp.Body.Close()
+
+	model, err := CheckComfyUI(context.Background())
+	if err != nil {
+		t.Fatalf("CheckComfyUI failed: %v", err)
+	}
+	if model != "qwen-image-edit-2511" {
+		t.Fatalf("expected priority model qwen-image-edit-2511, got %s", model)
+	}
+}
+
 // TestComfyUIIntegration exercises the real local ComfyUI installation when
 // explicitly enabled. It stays skipped in normal CI and never uses user photos.
 func TestComfyUIIntegration(t *testing.T) {
