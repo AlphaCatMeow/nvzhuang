@@ -1,0 +1,37 @@
+name: Sync upstream
+
+on:
+  schedule:
+    # 每天北京时间 00:00（UTC 16:00）。
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync paipiange/nvzhuang into fork
+    if: github.repository == 'AlphaCatMeow/nvzhuang'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Merge upstream into main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: main
+        shell: bash
+        # 使用 GitHub 官方同步接口，自动识别 Fork 上游。
+        # 保留 Fork 独有提交；发生冲突时失败，不强制覆盖。
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${TARGET_REPOSITORY}/merge-upstream" \
+            -f "branch=${TARGET_BRANCH}"
