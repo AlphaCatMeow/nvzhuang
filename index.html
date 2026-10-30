@@ -822,6 +822,7 @@ const I18N = {
     aiGenerate: '开始 AI 换装', aiGenerating: '生成中…', aiNeedPhoto: '请先上传你的照片',
     aiNeedGarment: '请先在「选择一件服装」里点选一件衣服', aiNeedUploadedGarment: '请先上传服装图片', aiNeedBoth: '请先上传照片并选择服装',
     aiFailed: '换装失败，请稍后重试', aiServerErr: '无法连接换装服务，请确认后端已部署并配置',
+    aiGatewayErr: '换装服务的网关或上游暂时不可用', aiInvalidResponse: '换装服务返回了无法识别的响应', aiHttpErr: '换装服务返回异常',
     tryonErrorTitle: 'AI 换装遇到问题', errorDialogClose: '知道了',
     serviceDialogTitle: '无法连接换装服务', serviceDialogMessage: '请在设置中心填写正确的后端 API 地址，或检查换装后端是否已经启动。',
     serviceDialogCancel: '暂不设置', serviceDialogSettings: '前往设置',
@@ -944,6 +945,7 @@ const I18N = {
     aiGenerate: 'Start AI try-on', aiGenerating: 'Generating…', aiNeedPhoto: 'Upload your photo first',
     aiNeedGarment: 'Pick a garment from the "Choose a garment" list first', aiNeedUploadedGarment: 'Upload a garment image first', aiNeedBoth: 'Upload a photo and pick a garment first',
     aiFailed: 'Try-on failed, please retry', aiServerErr: 'Cannot reach try-on service — make sure the backend is deployed and configured',
+    aiGatewayErr: 'The try-on gateway or upstream service is temporarily unavailable', aiInvalidResponse: 'The try-on service returned an unrecognized response', aiHttpErr: 'The try-on service returned an error',
     tryonErrorTitle: 'AI try-on needs attention', errorDialogClose: 'Got it',
     serviceDialogTitle: 'Cannot reach the try-on service', serviceDialogMessage: 'Enter the correct backend API URL in Settings, or check that the try-on backend is running.',
     serviceDialogCancel: 'Not now', serviceDialogSettings: 'Open Settings',
@@ -1429,12 +1431,71 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   const clearHistoryRecords = ()=>historyRequest('readwrite', store=>store.clear());
   const countHistoryRecords = ()=>historyRequest('readonly', store=>store.count());
 
-  function b64ToBlob(value){
-    const b64 = String(value || '').replace(/^data:[^,]+,/, '');
-    const binary = atob(b64);
+  function detectImageMimeFromBytes(bytes){
+    if(!bytes || bytes.length < 3) return '';
+    if(bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a) return 'image/png';
+    if(bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+    if(bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return 'image/webp';
+    return '';
+  }
+
+  function detectImageMimeFromBase64(value){
+    try{
+      const b64 = String(value || '').replace(/^data:[^,]+,/, '').replace(/\s+/g, '');
+      if(!b64) return '';
+      const prefix = b64.slice(0, 32);
+      const padded = prefix + '='.repeat((4 - prefix.length % 4) % 4);
+      const binary = atob(padded);
+      const bytes = new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+      return detectImageMimeFromBytes(bytes);
+    }catch(_){ return ''; }
+  }
+
+  function normalizeImageMime(value){
+    const mime = String(value || '').trim().toLowerCase().split(';')[0];
+    if(mime === 'image/jpg') return 'image/jpeg';
+    return ['image/png', 'image/jpeg', 'image/webp'].includes(mime) ? mime : '';
+  }
+
+  function imageExtensionForMime(value){
+    const mime = normalizeImageMime(value);
+    if(mime === 'image/jpeg') return 'jpg';
+    if(mime === 'image/webp') return 'webp';
+    return 'png';
+  }
+
+  function resolveResultImageInfo(imageB64, declaredMime){
+    const b64 = String(imageB64 || '').replace(/^data:[^,]+,/, '').replace(/\s+/g, '');
+    const detectedMime = detectImageMimeFromBase64(b64);
+    const declared = normalizeImageMime(declaredMime);
+    if(!detectedMime) throw new Error('unsupported result image');
+    return {
+      b64,
+      mime: detectedMime,
+      declaredMime: declared,
+      extension: imageExtensionForMime(detectedMime),
+    };
+  }
+
+  function createResultImageDataUrl(imageInfo){
+    return 'data:' + imageInfo.mime + ';base64,' + imageInfo.b64;
+  }
+
+  async function normalizeResultImageBlob(blob){
+    if(!(blob instanceof Blob)) throw new Error('unsupported result image');
+    const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
+    const mime = detectImageMimeFromBytes(bytes);
+    if(!mime) throw new Error('unsupported result image');
+    return normalizeImageMime(blob.type) === mime ? blob : new Blob([blob], {type:mime});
+  }
+
+  function b64ToBlob(value, declaredMime){
+    const imageInfo = resolveResultImageInfo(value, declaredMime);
+    const binary = atob(imageInfo.b64);
     const bytes = new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
-    return new Blob([bytes], {type:'image/png'});
+    return new Blob([bytes], {type:imageInfo.mime});
   }
 
   function blobToDataUrl(blob){
@@ -1471,9 +1532,16 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     historyMessage.textContent = '';
     try{
       const records = await getHistoryRecords();
+      const displayRecords = await Promise.all(records.map(async record=>{
+        try{
+          return {...record, image: await normalizeResultImageBlob(record.image)};
+        }catch(_){
+          return record;
+        }
+      }));
       historyClear.disabled = records.length === 0;
       historyEmpty.hidden = records.length !== 0;
-      historyGrid.innerHTML = records.map(record=>{
+      historyGrid.innerHTML = displayRecords.map(record=>{
         const imageUrl = URL.createObjectURL(record.image);
         historyObjectUrls.push(imageUrl);
         const model = record.provider ? `${record.provider} · ${record.model}` : record.model;
@@ -1512,7 +1580,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     if(historyReturnFocus && historyReturnFocus.focus) historyReturnFocus.focus();
   }
 
-  async function saveHistoryResult(imageB64, responseData, selectedGarment){
+  async function saveHistoryResult(imageB64, imageMime, responseData, selectedGarment){
     const createdAt = Date.now();
     const randomId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
     const isUpload = selectedGarment && selectedGarment.source === 'upload';
@@ -1524,7 +1592,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       garmentLabel: isUpload ? t('customGarmentLabel') : (selectedGarment ? selectedGarment.id : ''),
       provider: tryonSettings.useCustom ? tryonSettings.provider : '',
       model: tryonSettings.useCustom ? tryonSettings.model : (responseData.model || aiModel.value),
-      image: b64ToBlob(imageB64),
+      image: b64ToBlob(imageB64, imageMime),
     };
     await putHistoryRecord(record);
     await updateHistoryCount();
@@ -1679,17 +1747,19 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       const record = await getHistoryRecord(id);
       if(!record || !(record.image instanceof Blob)) throw new Error('History image missing');
       if(button.dataset.action === 'download'){
-        const url = URL.createObjectURL(record.image);
+        const imageBlob = await normalizeResultImageBlob(record.image);
+        const url = URL.createObjectURL(imageBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `AI换装-${record.garmentId || record.createdAt}.png`;
+        a.download = `AI换装-${record.garmentId || record.createdAt}.${imageExtensionForMime(imageBlob.type)}`;
         a.click();
         setTimeout(()=>URL.revokeObjectURL(url), 1000);
         return;
       }
       if(button.dataset.action === 'view'){
-        const dataUrl = await blobToDataUrl(record.image);
-        aiResultB64 = String(dataUrl).split(',')[1] || '';
+        const imageBlob = await normalizeResultImageBlob(record.image);
+        const dataUrl = await blobToDataUrl(imageBlob);
+        aiResultInfo = resolveResultImageInfo(String(dataUrl).split(',')[1] || '', imageBlob.type);
         aiResultImg.src = dataUrl;
         aiResultImg.style.display = 'block';
         aiResultEmpty.style.display = 'none';
@@ -2291,7 +2361,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
   const aiDownload = document.getElementById('aiDownload');
   const aiTaobaoResult = document.getElementById('aiTaobaoResult');
   const aiPinduoduoResult = document.getElementById('aiPinduoduoResult');
-  let aiResultB64 = '';
+  let aiResultInfo = null;
   aiModel.addEventListener('change', refreshConfigUI);
 
   // 检测浏览器 Canvas 是否支持 WebP 编码
@@ -2390,14 +2460,22 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
     return finalB64;
   }
 
+  async function parseTryonResponse(resp){
+    const contentType = String(resp && resp.headers && resp.headers.get('content-type') || '').toLowerCase();
+    const mediaType = contentType.split(';')[0].trim();
+    const isJSON = mediaType === 'application/json' || mediaType.endsWith('+json');
+    if(!isJSON) return null;
+    return resp.json().catch(()=>null);
+  }
+
   // 映射服务端返回的标准业务错误码与 HTTP 异常
   function getErrorMessageFromResponse(resp, data){
     const errCode = (data && data.data && data.data.error_code) || '';
     const bizCode = (data && typeof data.code === 'number') ? data.code : (resp ? resp.status : 0);
 
-    if(errCode === 'AUTH_REQUIRED' || bizCode === 40101) return { code: 'AUTH_REQUIRED', text: t('errAuthRequired') };
+    if(errCode === 'AUTH_REQUIRED' || bizCode === 40101 || bizCode === 401) return { code: 'AUTH_REQUIRED', text: t('errAuthRequired') };
     if(errCode === 'AUTH_INVALID' || bizCode === 40102) return { code: 'AUTH_INVALID', text: t('errAuthInvalid') };
-    if(errCode === 'ORIGIN_NOT_ALLOWED' || bizCode === 40301) return { code: 'ORIGIN_NOT_ALLOWED', text: t('errOriginNotAllowed') };
+    if(errCode === 'ORIGIN_NOT_ALLOWED' || bizCode === 40301 || bizCode === 403) return { code: 'ORIGIN_NOT_ALLOWED', text: t('errOriginNotAllowed') };
     if(errCode === 'REQUEST_TOO_LARGE' || bizCode === 41301 || bizCode === 413) return { code: 'REQUEST_TOO_LARGE', text: t('errRequestTooLarge') };
     if(errCode === 'INVALID_IMAGE_BASE64' || bizCode === 42201) return { code: 'INVALID_IMAGE_BASE64', text: t('errInvalidImageBase64') };
     if(errCode === 'UNSUPPORTED_IMAGE_TYPE' || bizCode === 42202) return { code: 'UNSUPPORTED_IMAGE_TYPE', text: t('errUnsupportedImageType') };
@@ -2413,6 +2491,16 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
         return { code: '', text: t('settingsBackendOutdated') };
       }
       return { code: '', text: t('aiFailed') + '：' + data.message };
+    }
+    const status = resp ? Number(resp.status) || 0 : 0;
+    if(status === 502 || status === 503 || status === 504){
+      return { code: 'GATEWAY_ERROR', text: `${t('aiGatewayErr')}（HTTP ${status}）` };
+    }
+    if(resp && resp.ok){
+      return { code: 'INVALID_RESPONSE', text: `${t('aiInvalidResponse')}（HTTP ${status}）` };
+    }
+    if(status){
+      return { code: 'HTTP_ERROR', text: `${t('aiHttpErr')}（HTTP ${status}）` };
     }
     return { code: '', text: t('aiFailed') };
   }
@@ -2597,13 +2685,19 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
         headers['Authorization'] = 'Bearer ' + token;
       }
 
-      const resp = await fetch(aiApi + '/tryon', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
+      let resp;
+      try{
+        resp = await fetch(aiApi + '/tryon', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+      }catch(_){
+        showTryonError(t('aiServerErr'), {settings:true});
+        return;
+      }
 
-      const data = await resp.json().catch(()=>null);
+      const data = await parseTryonResponse(resp);
       // 后端用 MiddlewareHandlerResponse 包裹：{code, message, data:{image, model, prompt}}
       const ok = resp.ok && data && data.code === 0 && data.data && data.data.image;
       if(!ok){
@@ -2617,15 +2711,15 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       }
 
       // 成功：展示结果
-      aiResultB64 = data.data.image;
-      aiResultImg.src = 'data:image/png;base64,' + data.data.image;
+      aiResultInfo = resolveResultImageInfo(data.data.image, data.data.mime);
+      aiResultImg.src = createResultImageDataUrl(aiResultInfo);
       aiResultImg.style.display = 'block';
       aiResultEmpty.style.display = 'none';
       aiResultBar.style.display = 'flex';
       // 滚动到结果
       aiResultImg.scrollIntoView({behavior:'smooth', block:'center'});
       try{
-        await saveHistoryResult(data.data.image, data.data, selectedGarment);
+        await saveHistoryResult(aiResultInfo.b64, aiResultInfo.mime, data.data, selectedGarment);
         showHint(isGPT ? t('aiSuccessGPT') : (isComfy ? t('aiSuccessComfy') : t('historySaved')));
       }catch(_){
         // 本机存储失败不影响本次生成结果的查看和下载。
@@ -2633,7 +2727,7 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
       }
     }catch(_){
       // 不把包含第三方响应细节的错误写入浏览器控制台，避免误带敏感配置。
-      showTryonError(t('aiServerErr'), {settings:true});
+      showTryonError(t('aiFailed'));
     }finally{
       setGenerating(false);
     }
@@ -2641,19 +2735,19 @@ $('#mimg').addEventListener('touchend',e=>{if(tx===null)return;const dx=e.change
 
   aiGenerate.addEventListener('click', doTryon);
   aiDownload.addEventListener('click', ()=>{
-    if(!aiResultB64) return;
+    if(!aiResultInfo) return;
     const a=document.createElement('a');
-    a.href='data:image/png;base64,'+aiResultB64;
-    a.download='AI换装-'+Date.now()+'.png';
+    a.href=createResultImageDataUrl(aiResultInfo);
+    a.download='AI换装-'+Date.now()+'.'+aiResultInfo.extension;
     a.click();
   });
   aiTaobaoResult.addEventListener('click', e=>{
-    if(!aiResultB64) return;
-    searchTaobaoByImage('data:image/png;base64,'+aiResultB64, `taobao-ai-look-${Date.now()}.png`, e.currentTarget);
+    if(!aiResultInfo) return;
+    searchTaobaoByImage(createResultImageDataUrl(aiResultInfo), `taobao-ai-look-${Date.now()}.png`, e.currentTarget);
   });
   aiPinduoduoResult.addEventListener('click', e=>{
-    if(!aiResultB64) return;
-    searchPinduoduoByImage('data:image/png;base64,'+aiResultB64, `pinduoduo-ai-look-${Date.now()}.png`, e.currentTarget);
+    if(!aiResultInfo) return;
+    searchPinduoduoByImage(createResultImageDataUrl(aiResultInfo), `pinduoduo-ai-look-${Date.now()}.png`, e.currentTarget);
   });
   aiRegenerate.addEventListener('click', doTryon);
   updateHistoryCount();

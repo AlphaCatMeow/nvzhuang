@@ -79,8 +79,13 @@ func (c *ControllerV1) Tryon(ctx context.Context, req *v1.TryonReq) (res *v1.Try
 	if err != nil {
 		return nil, err
 	}
+	imageMIME, err := tryon.DetectGeneratedImageMIME(imageB64)
+	if err != nil {
+		return nil, err
+	}
 	return &v1.TryonRes{
 		Image:  imageB64,
+		MIME:   imageMIME,
 		Model:  model,
 		Prompt: prompt,
 	}, nil
