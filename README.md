@@ -305,3 +305,8 @@ Each record in `data.js` contains the following fields:
 | `原寸` | Full-size PNG path |
 
 > Note: `カテゴリ`, `キーワード`, `サムネ`, `画像`, and `原寸` are the original Japanese field names kept for compatibility with the source data. The site localizes them to Chinese or English on the frontend automatically.
+
+## 📈 Star 增长趋势
+
+[![Star History Chart](star-history-20261031.png)](https://github.com/paipiange/nvzhuang)
+
