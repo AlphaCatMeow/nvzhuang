@@ -7,7 +7,8 @@
 > 不仅收录了 1407 套纯净高质量服装图，还顺手接了 AI 虚拟换装后端——这下各位佬友哪怕现实中没有小裙子，直接传张自拍照就能一键无痛变身“女装大佬”出道了 😂！
 
 > 🔗 **在线预览**：https://paipiange.github.io/nvzhuang/  
-> ⭐ **GitHub 源码**：https://github.com/paipiange/nvzhuang
+> ⭐ **GitHub 源码**：https://github.com/paipiange/nvzhuang  
+> 💃 **兄弟项目（AI 姿势参考与生图工坊）**：https://github.com/paipiange/ai-pose-gallery-zh  
 > 💡 **原作者推文 / 灵感来源**：X [@giaaibusi](https://x.com/giaaibusi)  
 > 🐧 **社区友链**：[LINUX DO (https://linux.do/)](https://linux.do/)
 
@@ -31,6 +32,23 @@
 |:---:|:---:|:---:|
 | <img src="docs/tryon-1.png" width="280" alt="选中的服装" /> | <img src="docs/tryon-2.png" width="280" alt="上传的模特照片" /> | <img src="docs/tryon-3.png" width="280" alt="AI 换装合成效果" /> |
 | **参考服装图**<br><sub>（图集中的精选女装）</sub> | **模特原图**<br><sub>（用户上传的人像日常照）</sub> | **AI 换装效果（图 1 + 图 2 ➔ 图 3）**<br><sub>（保留模特五官发型，自然融合服饰材质与剪裁）</sub> |
+
+## 🎬 兄弟项目联动：姿势参考 + 人物参考 → AI 生成结果
+
+如果你不仅想为模特挑选服装，还希望**自由掌控人体的拍摄姿势、骨架动作与构图视角**，推荐搭配我的另一个开源项目一起使用：  
+👉 **[拍片哥 · AI 姿势参考库与生图工坊 (AI Pose Gallery & Studio)](https://github.com/paipiange/ai-pose-gallery-zh)**
+
+该项目收录了 **288 组 / 1439 张** AI 人体多视角姿势参考图（日文数据完整汉化），内置「拍片哥 AI 姿势生图与试穿工坊」，支持骨架动作锁定、真实面料试穿与面容复刻：
+
+选择姿势骨架控制动作与构图，再上传人物/服装参考，即可生成同时保留目标姿势、人物面容与穿搭特征的完整图片：
+
+| ① 姿势与构图参考 | ② 人物与服装参考 | ③ AI 融合生成结果 |
+| :---: | :---: | :---: |
+| <img src="docs/pose-studio-pose-reference.png" width="280" alt="输入的 AI 人体姿势骨架参考图" /> | <img src="docs/pose-studio-person-reference.png" width="280" alt="输入的人物面容与服装参考图" /> | <img src="docs/pose-studio-generated-result.png" width="280" alt="保持目标姿势并融合人物与服装特征的 AI 生成结果" /> |
+| **锁定身体动作、视角与画面构图**<br><sub>（从 1439 张多角度姿势库中挑选骨架素体）</sub> | **提供面容、发型与服装特征**<br><sub>（结合本项目精选服装或上传的模特穿搭）</sub> | **AI 融合生成结果（图 1 + 图 2 ➔ 图 3）**<br><sub>（动作精准还原，完美呈现人物与穿搭细节）</sub> |
+
+> **上图即实际工作流：图 1 + 图 2 → 图 3。** 人物头像与服装均为可选输入；只选择姿势，也可以让模型自动完成人物与穿搭设计。  
+> 💡 **联动工作流**：在 [拍片哥女装](https://github.com/paipiange/nvzhuang) 挑选高质量服装设计，在 [拍片哥姿势库](https://github.com/paipiange/ai-pose-gallery-zh) 挑选合适的人体动作构图，两者结合即可生成兼具神韵动作与精美穿搭的专业级 AI 模特大片！
 
 ## ✨ 功能特性
 
@@ -217,7 +235,7 @@ nvzhuang/
 ├── assets/
 │   ├── thumbs/         # 缩略图（webp，网格卡片用）
 │   └── img/            # 展示图（webp，弹窗放大用）
-├── docs/               # 文档图片与试穿效果演示图
+├── docs/               # 文档图片、换装效果演示与姿势生图联动图
 ├── backend/            # AI 换装后端（GoFrame v2，可选）
 │   ├── docker-compose.yml                 # 后端 Docker Compose 配置
 │   ├── .env.example                       # 环境变量示例文件
@@ -240,8 +258,9 @@ nvzhuang/
 ?lang=en&q=white  # 组合使用
 ```
 
-## 💡 灵感来源与社区友链
+## 💡 灵感来源与推荐项目
 
+- **兄弟项目 / 姿势与生图工坊**：[拍片哥 AI 姿势参考库 (ai-pose-gallery-zh)](https://github.com/paipiange/ai-pose-gallery-zh) —— 288 组 / 1439 张多角度人体姿势，集成本地与多云端 AI 姿势生图与试穿工坊。
 - **原作者 / 灵感来源**：[X @giaaibusi](https://x.com/giaaibusi) —— 诚挚鸣谢原作者对高质量 AI 服装图集的整理与创意分享！
 - **社区友链**：[LINUX DO (https://linux.do/)](https://linux.do/) —— 真诚、友善、团结、专业的开源与技术极客社区。
 - **审计与规范文档**：
