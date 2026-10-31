@@ -306,7 +306,13 @@ Each record in `data.js` contains the following fields:
 
 > Note: `カテゴリ`, `キーワード`, `サムネ`, `画像`, and `原寸` are the original Japanese field names kept for compatibility with the source data. The site localizes them to Chinese or English on the frontend automatically.
 
-## 📈 Star 增长趋势
+## Star History
 
-[![Star History Chart](star-history-20261031.png)](https://github.com/paipiange/nvzhuang)
+<a href="https://www.star-history.com/?repos=nvzhuang%2Fnvzhuang%2Cpaipiange%2Fnvzhuang&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=nvzhuang/nvzhuang%2Cpaipiange/nvzhuang&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=nvzhuang/nvzhuang%2Cpaipiange/nvzhuang&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=nvzhuang/nvzhuang%2Cpaipiange/nvzhuang&type=date&legend=top-left" />
+ </picture>
+</a>
 
