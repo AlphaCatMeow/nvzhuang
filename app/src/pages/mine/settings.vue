@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useSettingsStore } from '@/store/settings'
 import { useTryonStore } from '@/store/tryon'
+import { getEnvBaseUrl } from '@/utils'
 
 definePage({
   style: {
@@ -38,8 +39,44 @@ function handleBack() {
   })
 }
 
+function normalizeServerUrl(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\/+$/, '')
+    .replace(/^https?:\/\//i, match => match.toLowerCase())
+}
+
+function isValidHttpUrl(url: string): boolean {
+  return /^https?:\/\/\S+$/i.test(url)
+}
+
+function isValidBackendOptionsResponse(raw: unknown): boolean {
+  let payload: unknown = raw
+  if (typeof payload === 'string') {
+    try {
+      payload = JSON.parse(payload)
+    }
+    catch {
+      return false
+    }
+  }
+  return typeof payload === 'object'
+    && payload !== null
+    && 'code' in payload
+    && (payload as { code?: unknown }).code === 0
+}
+
 function handleSave() {
-  settingsStore.serverBaseUrl = serverUrl.value.trim()
+  const cleanUrl = normalizeServerUrl(serverUrl.value)
+  if (cleanUrl && !isValidHttpUrl(cleanUrl)) {
+    uni.showToast({
+      title: '服务地址需以 http:// 或 https:// 开头',
+      icon: 'none',
+    })
+    return
+  }
+  serverUrl.value = cleanUrl
+  settingsStore.serverBaseUrl = cleanUrl
   settingsStore.useMock = useMock.value
   settingsStore.expertMode = expertMode.value
   settingsStore.clientConfig = {
@@ -56,19 +93,46 @@ function handleSave() {
 }
 
 async function handleTestConnection() {
+  if (testLoading.value) {
+    return
+  }
+  const target = normalizeServerUrl(serverUrl.value)
+  if (!target) {
+    uni.showToast({
+      title: '请先输入服务地址',
+      icon: 'none',
+    })
+    return
+  }
+  if (!isValidHttpUrl(target)) {
+    uni.showToast({
+      title: '服务地址需以 http:// 或 https:// 开头',
+      icon: 'none',
+    })
+    return
+  }
+
+  serverUrl.value = target
   testLoading.value = true
-  const target = serverUrl.value.trim().replace(/\/+$/, '')
   try {
     const res = await uni.request({
-      url: `${target}/api/v1/options`,
+      url: `${target}/api/v1/tryon/options`,
       method: 'GET',
-      timeout: 5000,
+      timeout: 10000,
     })
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      uni.showToast({
-        title: '连接成功',
-        icon: 'success',
-      })
+      if (isValidBackendOptionsResponse(res.data)) {
+        uni.showToast({
+          title: '连接成功',
+          icon: 'success',
+        })
+      }
+      else {
+        uni.showToast({
+          title: '响应异常，请确认后端地址',
+          icon: 'none',
+        })
+      }
     }
     else {
       uni.showToast({
@@ -77,7 +141,7 @@ async function handleTestConnection() {
       })
     }
   }
-  catch (e: any) {
+  catch {
     uni.showToast({
       title: '连接失败，请检查网络或后端状态',
       icon: 'none',
@@ -157,21 +221,27 @@ function handleResetDefaults() {
           </text>
 
           <view class="input-group">
-            <text class="input-label">服务基础地址 (Base URL)</text>
+            <view class="flex items-center justify-between">
+              <text class="input-label">服务基础地址 (Base URL)</text>
+              <text class="text-11px text-#9e8e95">即时生效</text>
+            </view>
             <input
               v-model="serverUrl"
               class="text-input"
               type="text"
-              placeholder="http://127.0.0.1:8000"
+              placeholder="例如 https://api.yourdomain.com 或 http://192.168.1.100:8000"
             >
           </view>
 
           <view class="action-row">
+            <view class="preset-tag" @tap="serverUrl = getEnvBaseUrl()">
+              环境默认
+            </view>
             <view class="preset-tag" @tap="serverUrl = 'http://127.0.0.1:8000'">
-              本机 127.0.0.1:8000
+              本机 127.0.0.1
             </view>
             <view class="preset-tag" @tap="serverUrl = 'http://10.0.2.2:8000'">
-              Android模拟器 10.0.2.2
+              模拟器 10.0.2.2
             </view>
             <view class="btn-test" :class="{ disabled: testLoading }" @tap="handleTestConnection">
               {{ testLoading ? '测试中...' : '测试连接' }}

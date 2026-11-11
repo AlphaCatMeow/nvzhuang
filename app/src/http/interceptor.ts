@@ -1,10 +1,8 @@
 import type { CustomRequestOptions } from '@/http/types'
+import { useSettingsStore } from '@/store/settings'
 import { useTokenStore } from '@/store'
-import { getEnvBaseUrl } from '@/utils'
+import { getCurrentBaseUrl } from '@/utils'
 import { stringifyQuery } from './tools/queryString'
-
-// 请求基准地址
-const baseUrl = getEnvBaseUrl()
 
 // 拦截器配置
 const httpInterceptor = {
@@ -26,26 +24,40 @@ const httpInterceptor = {
       }
     }
     // 非 http 开头需拼接地址
-    if (!options.url.startsWith('http')) {
+    if (!/^https?:\/\//i.test(options.url)) {
+      // 动态获取当前配置的 base url（优先用户在设置中自定义保存的地址，未设置则使用环境默认地址）
+      let activeBaseUrl = ''
+      try {
+        const settingsStore = useSettingsStore()
+        activeBaseUrl = settingsStore.serverBaseUrl?.trim() || getCurrentBaseUrl()
+      }
+      catch {
+        activeBaseUrl = getCurrentBaseUrl()
+      }
+      activeBaseUrl = activeBaseUrl.replace(/\/+$/, '')
+
+      const cleanPath = options.url.startsWith('/') ? options.url : `/${options.url}`
+
       // #ifdef H5
       if (JSON.parse(import.meta.env.VITE_APP_PROXY_ENABLE)) {
         // 自动拼接代理前缀
-        options.url = import.meta.env.VITE_APP_PROXY_PREFIX + options.url
+        options.url = import.meta.env.VITE_APP_PROXY_PREFIX + cleanPath
       }
       else {
-        options.url = baseUrl + options.url
+        options.url = activeBaseUrl + cleanPath
       }
       // #endif
       // 非H5正常拼接
       // #ifndef H5
-      options.url = baseUrl + options.url
+      options.url = activeBaseUrl + cleanPath
       // #endif
       // TIPS: 如果需要对接多个后端服务，也可以在这里处理，拼接成所需要的地址
     }
-    // 1. 请求超时
-    options.timeout = 60000 // 60s
-    // 2. （可选）添加小程序端请求头标识
+    // 1. 请求超时（尊重调用方传入的超时时间，默认 60s）
+    options.timeout = options.timeout || 60000 // 60s
+    // 2. （可选）添加小程序端请求头标识与 ngrok 穿透跳过警告头
     options.header = {
+      'ngrok-skip-browser-warning': 'true',
       ...options.header,
     }
     // 3. 添加 token 请求头标识

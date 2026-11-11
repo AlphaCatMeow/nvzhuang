@@ -32,3 +32,15 @@ dist/
 # 临时测试生成输出
 output/
 *.zip
+
+# 打包产物
+dist-apk/
+dist-apk-v2/
+release_apk/
+build_output/
+*.apk
+*.jks
+android/.gradle/
+android/app/build/
+android/build/
+

@@ -1,0 +1,106 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build Offline Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: 'app/pnpm-lock.yaml'
+
+      - name: Build Web Application Bundle
+        working-directory: ./app
+        run: |
+          if [ ! -f env/.env ]; then
+            cp env/.env.example env/.env
+          fi
+          pnpm config set registry https://registry.npmjs.org
+          pnpm install --registry=https://registry.npmjs.org
+          pnpm build:h5
+
+      - name: Bundle Web Assets into Android App
+        run: |
+          mkdir -p android/app/src/main/assets/www
+          cp -r app/dist/build/h5/* android/app/src/main/assets/www/
+
+      - name: Setup Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | sdkmanager --licenses || true
+
+      - name: Prepare Signing Keystore
+        working-directory: ./android/app
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
+          elif [ ! -f release.jks ]; then
+            keytool -genkeypair -v -keystore release.jks -alias paipiange -keyalg RSA -keysize 2048 -validity 10000 -storepass "nvzhuang123456" -keypass "nvzhuang123456" -dname "CN=paipiange, OU=nvzhuang, O=paipiange, L=Beijing, ST=Beijing, C=CN"
+          fi
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build Release APK
+        working-directory: ./android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'nvzhuang123456' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'paipiange' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'nvzhuang123456' }}
+        run: |
+          gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Rename APK for Distribution
+        run: |
+          mkdir -p build_output
+          cp android/app/build/outputs/apk/release/*.apk build_output/nvzhuang-release.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nvzhuang-release.apk
+          path: build_output/nvzhuang-release.apk
+
+      - name: Publish to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build_output/nvzhuang-release.apk
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## 📱 Android 离线安装包下载
+
+            - **GitHub 直接下载**：点击下方 Assets 中的 `nvzhuang-release.apk`
+            - **夸克网盘下载（国内备用）**：「拍片哥女装」链接：https://pan.quark.cn/s/a914f76fac0b
+
+            > 💡 **使用提示**：本安装包已内置全部前端页面与离线示例图集。如需使用真实 AI 换装功能，请在 App 内前往「我的 → 服务与模型设置」填写你的后端 API 地址；如仅体验图库浏览，可在设置中开启「离线演示模式」。
+          draft: false
+          prerelease: false
